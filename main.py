@@ -6,7 +6,7 @@ print(scripts.loader.__file__)  # Verify the path to the data_loader module
 
 def main():
     # Step 1: Define the file path for the input CSV file
-    file_path = 'C:/Users/hilbe/hypermvp/data/Aktivierte_aFRR.csv'
+    file_path = 'C:/Users/hilbe/hypermvp/data/testdata_affr_sept.csv'
     
     # Step 2: Load the data
     data = load_data(file_path)
