@@ -1,7 +1,6 @@
-from scripts.afrr_loader import load_data
-from scripts.afrr_data_cleaner import filter_negative_50hertz
-import scripts.afrr_loader
-print(scripts.afrr_loader.__file__)  # Verify the path to the data_loader module
+from src.afrr.loader import load_data
+from src.afrr.cleaner import filter_negative_50hertz
+
 
 
 def main():
