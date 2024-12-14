@@ -1,8 +1,14 @@
-import os 
-from src.afrr.loader import load_data as load_afrr_data
-from src.afrr.cleaner import filter_negative_50hertz
-from src.provider.loader import load_provider_list
-from src.provider.cleaner import clean_provider_data
+import sys
+import os
+
+# Add project root to sys.path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+from afrr.loader import load_data as load_afrr_data
+from afrr.cleaner import filter_negative_50hertz
+from provider.loader import load_provider_list
+from provider.cleaner import clean_provider_data
+
 
 
 def main():
