@@ -1,13 +1,12 @@
 
 # **HyperMVP**
-HyperMVP will load, clean, analyze data related to the German energy control market.
-
+HyperMVP is a Python-based project designed to process, analyze, and clean data related to the German energy control market, particularly focusing on aFRR (automatic frequency restoration reserve) and provider data.
 
 ## **Features**
-- Organized data storage and retrieval (`data/`).
-- Python-based script automation (`scripts/`).
-- Easy-to-use main entry point (`main.py`).
-- Integrated testing framework (`test_loader.py`).
+- Structured data storage in directories for raw, processed, and output data (`data/`).
+- Python-based automation for data processing and analysis within the `src/` folder.
+- Main entry point to execute the project (`main.py`).
+- Integrated data processing tests, likely within the `src/` folder (e.g., `test_loader.py`).
 
 ---
 
@@ -19,6 +18,8 @@ Before you begin, ensure you have the following installed:
 - `pip` (Python package manager)
 - pandas
 - numpy
+- other dependencies specified in requirements.txt
+
 
 ### **Installation**
 1. Clone the repository:
@@ -26,22 +27,37 @@ Before you begin, ensure you have the following installed:
    git clone https://github.com/hilbertp/hypermvp.git
    cd hypermvp
    ```
-2. Install required dependencies:
-   ```bash
+2. Create and activate a virtual environment (optional but recommended):
+ ```bash
+ python -m venv venv
+# For Windows
+venv\Scripts\activate
+# For MacOS/Linux
+source venv/bin/activate
+```
+3. Install required dependencies:
+```bash
    pip install -r requirements.txt
-   ```
+```
 
 ---
 
 
 ## **Project Structure**
-```
+```bash 
 hypermvp/
 ├── data/               # Directory for datasets or output files
-├── scripts/            # Directory for helper or utility scripts
+│   ├── 01_raw          # Raw data files
+│   ├── 02_processed    # Processed data files
+│   └── 03_output       # Cleaned and output data files
+├── src/                # Source code for data loading and processing
+│   ├── afrr/           # aFRR data handling
+│   └── provider/       # Provider data handling
+├── tests/              # Directory for testing framework and test scripts
 ├── main.py             # Main entry point for the application
-├── test_loader.py      # Script for testing data loading functionalities
-└── requirements.txt    # Python dependencies (to be added)
+├── requirements.txt    # Python dependencies
+├── README.md           # Project documentation
+
 ```
 
 ---
@@ -63,7 +79,7 @@ This project is licensed under the [MIT License](LICENSE). See `LICENSE` for det
 
 ## **Contact**
 For questions or suggestions, please contact:  
-- **Hilbert P.**  
+- **Hilbert, Philipp**, philipp (at) hyperion-grid (dot) com  
 - [GitHub Profile](https://github.com/hilbertp)
 
 ---
