@@ -28,15 +28,13 @@ Before you begin, ensure you have the following installed:
    cd hypermvp
    ```
 2. Create and activate a virtual environment (optional but recommended):
- # For Windows
  ```bash
- python -m venv venv
- venv\Scripts\activate
-```
-# For MacOS/Linux
-```bash
 python -m venv venv
+# for Windows
+venv\Scripts\activate
+# for MacOS/Linux
 source venv/bin/activate
+
 ```
 3. Install required dependencies:
 ```bash
