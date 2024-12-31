@@ -29,10 +29,14 @@ Before you begin, ensure you have the following installed:
    ```
 2. Create and activate a virtual environment (optional but recommended):
  ```bash
+ # For Windows
  python -m venv venv
-# For Windows
-venv\Scripts\activate
+ venv\Scripts\activate
+```
+
+```bash
 # For MacOS/Linux
+python -m venv venv
 source venv/bin/activate
 ```
 3. Install required dependencies:
