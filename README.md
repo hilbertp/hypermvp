@@ -28,13 +28,14 @@ Before you begin, ensure you have the following installed:
    cd hypermvp
    ```
 2. Create and activate a virtual environment (optional but recommended):
- ```bash
-python -m venv venv
-# for Windows
-venv\Scripts\activate
-# for MacOS/Linux
-source venv/bin/activate
 
+on Windows:
+```bash
+.\venv\Scripts\activate
+```
+on macOS/Linux:
+```bash
+source venv/bin/activate
 ```
 3. Install required dependencies:
 ```bash
@@ -80,7 +81,7 @@ This project is licensed under the [MIT License](LICENSE). See `LICENSE` for det
 
 ## **Contact**
 For questions or suggestions, please contact:  
-- **Hilbert, Philipp**, philipp (at) hyperion-grid (dot) com  
+- ** Philipp Hilbert**, philipp (at) hyperion-grid (dot) com  
 - [GitHub Profile](https://github.com/hilbertp)
 
 ---

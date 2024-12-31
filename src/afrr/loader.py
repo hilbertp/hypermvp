@@ -1,6 +1,6 @@
 import pandas as pd
 
-def load_data(file_path):
+def load_afrr_data(file_path):
     """
     Loads CSV data into a Pandas DataFrame and formats the date.
 
