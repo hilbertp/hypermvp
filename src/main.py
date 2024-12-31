@@ -4,25 +4,26 @@ import os
 # Add project root to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from afrr.loader import load_data as load_afrr_data
-from afrr.cleaner import filter_negative_50hertz
+from config import AFRR_FILE_PATH, PROVIDER_FILE_PATHS, OUTPUT_DATA_DIR
 from provider.loader import load_provider_list
-from provider.cleaner import clean_provider_data
 
 
 
 def main():
     # Step 1: Define file paths
-    afrr_file_path = 'G:\\hyperMVP\\hypermvp\\data\\testdata_aFRR_sept.csv'
-    print(f"Loading provider list from: {provider_file_path}")
-    provider_file_paths = ['G:\\hyperMVP\\hypermvp\\data\\provider_list_2024_09_01.xlsx']
+    afrr_file_path = AFRR_FILE_PATH
+    print(f"Loading aFRR data from: {afrr_file_path}")
+
+    provider_file_paths = PROVIDER_FILE_PATHS
+    print(f"Loading provider list from: {provider_file_paths}")
     provider_data = load_provider_list(provider_file_paths)  # Pass as a list   
     print(f"Provider file paths: {provider_file_paths}")
 
 
     # Step 2: Create output directory
-    output_dir = 'G:\\hyperMVP\\hypermvp\\data\\output'
+    output_dir = OUTPUT_DATA_DIR
     os.makedirs(output_dir, exist_ok=True)
+    print(f"Output directory ensured: {output_dir}")
 
     # Step 3: Load and clean aFRR data
     afrr_data = load_afrr_data(afrr_file_path)
