@@ -1,5 +1,10 @@
+import sys
+print("sys.path:", sys.path)
+import os
 import unittest
 import pandas as pd
+
+
 from src.afrr.cleaner import filter_negative_50hertz
 
 class TestFilterNegative50Hertz(unittest.TestCase):

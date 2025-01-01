@@ -1,7 +1,8 @@
 import sys
+print("sys.path:", sys.path)
 
-# Add project root to sys.path (only once)
-sys.path.append('G:/hyperMVP/hypermvp')  # Adjust the path based on the actual location of your project
+import os
+print("Current working directory:", os.getcwd())
 
 # Import the loader module
 import src.afrr.loader

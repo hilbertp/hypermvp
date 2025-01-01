@@ -9,6 +9,12 @@ def filter_negative_50hertz(data):
         pd.DataFrame: A DataFrame with the selected columns.
     """
     try:
+        # Strip any extra spaces from column names
+        data.columns = data.columns.str.strip()
+
+        # Check columns before filtering
+        print("Columns in data:", data.columns.tolist())
+
         # Select relevant columns
         relevant_data = data[['Datum', 'von', 'bis', '50Hertz (Negativ)']]
 
