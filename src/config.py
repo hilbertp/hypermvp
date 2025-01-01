@@ -11,4 +11,15 @@ OUTPUT_DATA_DIR = os.path.join(DATA_DIR, '03_output')
 
 # File paths
 AFRR_FILE_PATH = os.path.join(RAW_DATA_DIR, 'testdata_aFRR_sept.csv')
-PROVIDER_FILE_PATHS = [os.path.join(RAW_DATA_DIR, 'provider_list_2024_09_01.xlsx')]
+
+# Automatically discover all provider files in RAW_DATA_DIR
+PROVIDER_FILE_PATHS = [
+    os.path.join(RAW_DATA_DIR, file)
+    for file in os.listdir(RAW_DATA_DIR)
+    if file.endswith('.xlsx') or file.endswith('.csv')  # Supports both formats
+]
+
+# Ensure directories exist
+os.makedirs(RAW_DATA_DIR, exist_ok=True)
+os.makedirs(PROCESSED_DATA_DIR, exist_ok=True)
+os.makedirs(OUTPUT_DATA_DIR, exist_ok=True)

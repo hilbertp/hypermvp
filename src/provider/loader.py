@@ -1,36 +1,25 @@
 import pandas as pd
-from typing import List
 
-def load_provider_list(file_paths: List[str]) -> pd.DataFrame:
+def load_provider_file(file_path):
     """
-    Load provider lists from one or more Excel files.
+    Load a single provider data file.
 
-    Parameters:
-    file_paths (List[str]): List of file paths to Excel files.
+    Args:
+        file_path (str): Path to the provider data file.
 
     Returns:
-    pd.DataFrame: Concatenated DataFrame containing all loaded data.
+        pd.DataFrame: Loaded DataFrame.
     """
     try:
-    dfs = []
-    for file_path in file_paths:
-        try:
-            print(f"Loading provider list from {file_path}...")
-            df = pd.read_excel(file_path)
-            dfs.append(df)
-        except FileNotFoundError:
-            print(f"File not found: {file_path}")
-        except Exception as e:
-            print(f"Error loading file {file_path}: {e}")
-    
-    # Combine all loaded DataFrames
-    if dfs:
-        combined_df = pd.concat(dfs, ignore_index=True)
-        print(f"Loaded {len(combined_df)} rows from {len(file_paths)} file(s).")
-        return combined_df
-    else:
-        print("No valid provider files loaded.")
-        return None
-except Exception as e:
-    print(f"Unexpected error: {e}")
-    return None
+        # Check file extension and load file accordingly
+        if file_path.endswith('.csv'):
+            return pd.read_csv(file_path, sep=';', decimal=',')
+        elif file_path.endswith('.xlsx'):
+            return pd.read_excel(file_path)
+        else:
+            # Raise an error for unsupported file formats
+            raise ValueError(f"Unsupported file format: {file_path}")
+    except Exception as e:
+        # Print an error message and return an empty DataFrame on failure
+        print(f"Error loading file {file_path}: {e}")
+        return pd.DataFrame()
