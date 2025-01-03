@@ -1,22 +1,19 @@
 def filter_negative_50hertz(data):
     """
     Filters the DataFrame to retain only the relevant columns for negative regulation from 50Hertz.
-
+    
     Args:
         data (pd.DataFrame): The original DataFrame.
-
+    
     Returns:
         pd.DataFrame: A DataFrame with the selected columns.
     """
     try:
-        # Strip any extra spaces from column names
-        data.columns = data.columns.str.strip()
-
-        # Check columns before filtering
-        print("Columns in data:", data.columns.tolist())
-
-        # Select relevant columns
-        relevant_data = data[['Datum', 'von', 'bis', '50Hertz (Negativ)']]
+        # Ensure column names are strings and strip any extra spaces
+        data.columns = data.columns.astype(str).str.strip()  # **No change**
+        
+        # Select relevant columns (update to include 'Datum', 'von', 'bis', and '50Hertz (Negativ)')
+        relevant_data = data[['Datum', 'von', 'bis', '50Hertz (Negativ)']]  # **No change**
 
         return relevant_data
     except KeyError as e:

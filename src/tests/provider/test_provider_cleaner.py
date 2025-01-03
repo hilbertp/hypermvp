@@ -1,6 +1,6 @@
 import unittest
 import pandas as pd
-from src.provider.cleaner import clean_provider_data
+from provider.cleaner import clean_provider_data
 
 class TestCleaner(unittest.TestCase):
 

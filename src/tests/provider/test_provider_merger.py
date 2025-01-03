@@ -1,6 +1,6 @@
 import unittest
 import pandas as pd
-from src.provider.merger import merge_cleaned_data
+from provider.merger import merge_cleaned_data
 
 class TestMerger(unittest.TestCase):
 
