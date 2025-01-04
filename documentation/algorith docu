@@ -1,0 +1,153 @@
+### Marginal Price Analysis for Balancing Energy Markets
+
+To optimize profitability and pricing strategy in the secondary control energy market, it is critical
+to calculate the marginal price—the highest price activated for balancing energy in a specific
+15-minute interval.
+
+This document outlines the algorithm for determining the marginal price and its implementation.
+
+---
+
+## Algorithm: Determining the Marginal Price
+
+### 1. **Data Acquisition**
+#### Required Data:
+- **Automatic Frequency Restoration Reserve (aFRR) Data**: 15-minute interval data for activated
+  negative aFRR from various TSOs (Transmission System Operators).
+- **Provider Offer Data**: Price and capacity information for aFRR offers.
+
+#### Sources:
+- [Netztransparenz: Activated Balancing Power Data](https://www.netztransparenz.de/de-de/Regelenergie/Daten-Regelreserve/Aktivierte-Regelleistung)
+- [Regelleistung Data Center](https://www.regelleistung.net)
+
+---
+
+### 2. **Data Preparation**
+#### Import Data:
+- Three types of data files are imported:
+  - **File 1**: Activated aFRR volumes (positive and negative) for 15-minute intervals.
+  - **File 2**: Provider offers with volumes and prices.
+
+#### Provider Data Loading:
+The `load_provider_file` function loads provider data from an XLSX file:
+```python
+from loader import load_provider_file
+
+provider_data = load_provider_file('path/to/provider_file.xlsx')
+```
+
+#### Provider Data Cleaning:
+The `clean_provider_data` function cleans and transforms provider data:
+- Validates required columns.
+- Converts `DELIVERY_DATE` to datetime format.
+- Adjusts `ENERGY_PRICE_[EUR/MWh]` based on `ENERGY_PRICE_PAYMENT_DIRECTION`.
+- Sorts the DataFrame by delivery date, product, and price.
+
+```python
+from cleaner import clean_provider_data
+
+cleaned_provider_data = clean_provider_data(provider_data)
+```
+
+#### Merging Cleaned Data:
+The `merge_cleaned_data` function integrates the cleaned provider data into a combined DataFrame:
+```python
+from merger import merge_cleaned_data
+
+combined_data = merge_cleaned_data(existing_combined_data, cleaned_provider_data)
+```
+
+---
+
+### 3. **Understanding the Merit Order Principle**
+#### Sorting Offers:
+- Offers are sorted by price.
+- The direction of payment is considered:
+  - **Provider-to-Grid** prices (negative prices) are adjusted: `price = -price`.
+  - **Grid-to-Provider** prices remain positive.
+
+---
+
+### 4. **Determining Marginal Price for an Interval**
+#### Steps:
+1. Identify the activated negative aFRR volume for a specific interval (e.g., 80.528 MW for 50Hertz
+   at 16:00–16:15 on April 17, 2024).
+2. Match the offers to the corresponding interval product identifier (e.g., `NEG_065`).
+
+---
+
+### 5. **Filtering and Sorting Offers**
+- Filter offers for the specific interval.
+- Sort filtered offers by adjusted prices.
+
+---
+
+### 6. **Calculating Marginal Price**
+#### Initialization:
+- **Accumulated Volume (`accumulated_mw`)**: Total activated capacity up to the marginal price.
+- **Marginal Price (`marginal_price`)**: Price of the last activated offer.
+
+#### Iterative Summation:
+1. Iterate through sorted offers.
+2. Add offered capacity to `accumulated_mw` until the total demand (`total_mw_needed`) is met.
+3. The price of the last activated offer is set as the marginal price.
+
+---
+
+### Milestones for Development
+
+#### Milestone 1: Sample Run for a 4-Hour Period
+- **Goal**: Perform a test run of the algorithm for a 4-hour time window.
+- **Reason**: Minimize the amount of data required and ensure short runtime for initial analysis.
+
+#### Milestone 2: Full Week Analysis
+- **Goal**: Extend the algorithm to analyze data over a full week.
+- **Requirements**:
+  - Automate data gathering for the specified time span.
+  - Ensure efficient loading, cleaning, and merging of data.
+
+#### Milestone 3: Arbitrary Time Span
+- **Goal**: Enable the algorithm to analyze data for any user-specified time span.
+- **Capabilities**:
+  - Gather required data autonomously from online sources.
+  - Load, clean, and merge the data appropriately.
+  - Execute all necessary mathematical operations to provide insights.
+
+---
+
+### Future Goal: Profitability Estimation Function
+
+The ultimate objective is to establish a function that:
+1. Takes a user-defined Arbeitspreis (work price) as input.
+2. Calculates the weekly calls based on this input.
+3. Provides estimates for profitability, enabling strategic decision-making.
+
+This capability will allow providers to simulate scenarios and optimize pricing strategies effectively.
+
+---
+
+### Example: Marginal Price Calculation
+#### Input:
+- Activated volume: **80.528 MW** for 50Hertz at 16:00–16:15 on April 17, 2024.
+
+#### Process:
+1. **Sort offers** by price and iterate through them.
+2. Sum capacities until reaching or exceeding the required 80.528 MW.
+3. Marginal price = Price of the last activated offer.
+
+#### Result:
+- Marginal price = **-3.87 EUR/MWh** for 80.528 MW.
+- If demand was 138 MW, the marginal price would be **14.04 EUR/MWh**.
+
+---
+
+## Conclusion
+This algorithm effectively determines the marginal price by:
+- Adjusting for payment direction.
+- Sorting and filtering offers.
+- Iteratively summing offers to meet the demand.
+
+By applying this approach, providers can optimize their pricing strategies and better understand
+market dynamics.
+
+---
