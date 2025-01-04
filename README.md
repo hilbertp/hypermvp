@@ -48,18 +48,19 @@ source venv/bin/activate
 ## **Project Structure**
 ```bash 
 hypermvp/
-├── data/               # Directory for datasets or output files
-│   ├── 01_raw          # Raw data files
-│   ├── 02_processed    # Processed data files
-│   └── 03_output       # Cleaned and output data files
-├── src/                # Source code for data loading and processing
-│   ├── afrr/           # aFRR data handling
-│   └── provider/       # Provider data handling
-├── tests/              # Directory for testing framework and test scripts
-├── main.py             # Main entry point for the application
-├── requirements.txt    # Python dependencies
-├── README.md           # Project documentation
-
+├── .vscode/               # Visual Studio Code configurations
+├── data/                  # Data directory for storage and processing
+│   ├── 01_raw/            # Raw unprocessed data
+│   ├── 02_processed/      # Processed intermediate data
+│   └── 03_output/         # Cleaned and output data
+├── documentation/         # Documentation files
+├── src/                   # Source code for the application
+│   ├── afrr/              # Modules for handling aFRR data
+│   ├── provider/          # Modules for handling provider data
+│   └── tests/             # Tests folder within `src`
+│       ├── afrr/          # Tests for aFRR modules
+│       └── provider/      # Tests for provider modules
+├── .gitignore             # Git ignore file
 ```
 
 ---
