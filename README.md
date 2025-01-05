@@ -57,10 +57,10 @@ hypermvp/
 ├── src/hypermvp/          # Source code for the application
 │   ├── afrr/              # Modules for handling aFRR data
 │   ├── provider/          # Modules for handling provider data
-│   └── tests/             # Tests folder within `src`
-│       ├── afrr/          # Tests for aFRR modules
-│       └── provider/      # Tests for provider modules
-├── .gitignore             # Git ignore file
+├── tests/                 # Tests folder
+│   ├── afrr/              # Tests for aFRR modules
+│   └── provider/          # Tests for provider modules
+└── .gitignore             # Git ignore file
 ```
 
 ---
