@@ -1,6 +1,6 @@
 import unittest
 import pandas as pd
-from provider.cleaner import clean_provider_data
+from hypermvp.provider.cleaner import clean_provider_data
 
 class TestCleaner(unittest.TestCase):
 

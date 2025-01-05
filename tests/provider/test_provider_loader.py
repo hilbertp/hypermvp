@@ -1,7 +1,7 @@
 import os
 import unittest
 import pandas as pd
-from provider.loader import load_provider_file
+from hypermvp.provider.loader import load_provider_file
 
 class TestLoader(unittest.TestCase):
 

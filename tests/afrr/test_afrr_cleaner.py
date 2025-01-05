@@ -1,7 +1,7 @@
 import os
 import unittest
 import pandas as pd
-from afrr.cleaner import filter_negative_50hertz  # Make sure this import path is correct
+from hypermvp.afrr.cleaner import filter_negative_50hertz  # Make sure this import path is correct
 
 class TestFilterNegative50Hertz(unittest.TestCase):
     

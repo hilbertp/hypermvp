@@ -1,8 +1,8 @@
 import unittest
 import os
 import pandas as pd
-from afrr.dumper import dump_afrr_data
-from src.config import PROCESSED_DIR
+from hypermvp.afrr.dumper import dump_afrr_data
+from hypermvp.config import PROCESSED_DATA_DIR
 
 class TestAfrrDumper(unittest.TestCase):
 
@@ -16,7 +16,7 @@ class TestAfrrDumper(unittest.TestCase):
         })
 
         # Ensure the processed directory exists
-        os.makedirs(PROCESSED_DIR, exist_ok=True)
+        os.makedirs(PROCESSED_DATA_DIR, exist_ok=True)
 
     def test_dump_afrr_data(self):
         # Define a test identifier
@@ -26,19 +26,19 @@ class TestAfrrDumper(unittest.TestCase):
         dump_afrr_data(self.cleaned_data, test_identifier)
 
         # Verify if the file was created
-        files = os.listdir(PROCESSED_DIR)
+        files = os.listdir(PROCESSED_DATA_DIR)
         test_files = [f for f in files if test_identifier in f and f.endswith('.csv')]
         self.assertTrue(len(test_files) > 0, "The dump file was not created.")
 
         # Verify content of the dumped file
         for file in test_files:
-            file_path = os.path.join(PROCESSED_DIR, file)
+            file_path = os.path.join(PROCESSED_DATA_DIR, file)
             dumped_data = pd.read_csv(file_path)
             pd.testing.assert_frame_equal(dumped_data, self.cleaned_data)
 
         # Clean up test files
         for file in test_files:
-            os.remove(os.path.join(PROCESSED_DIR, file))
+            os.remove(os.path.join(PROCESSED_DATA_DIR, file))
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,16 +1,14 @@
 import sys
 import os
 import time
+import pandas as pd
 
-# Add project root to sys.path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
-from src.afrr.loader import load_afrr_data
-from src.afrr.cleaner import filter_negative_50hertz
-from src.provider.loader import load_provider_file
-from src.provider.cleaner import clean_provider_data
-from src.provider.merger import merge_cleaned_data
-from src.config import AFRR_FILE_PATH, PROVIDER_FILE_PATHS, OUTPUT_DATA_DIR, PROCESSED_DATA_DIR
+from hypermvp.afrr.loader import load_afrr_data
+from hypermvp.afrr.cleaner import filter_negative_50hertz
+from hypermvp.provider.loader import load_provider_file
+from hypermvp.provider.cleaner import clean_provider_data
+from hypermvp.provider.merger import merge_cleaned_data
+from hypermvp.config import AFRR_FILE_PATH, PROVIDER_FILE_PATHS, OUTPUT_DATA_DIR, PROCESSED_DATA_DIR
 
 
 def main():
