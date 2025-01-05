@@ -37,9 +37,9 @@ on macOS/Linux:
 ```bash
 source venv/bin/activate
 ```
-3. Install required dependencies:
+3. Install the package as editable, with required dependencies:
 ```bash
-   pip install -r requirements.txt
+   pip install -e .
 ```
 
 ---
@@ -54,7 +54,7 @@ hypermvp/
 │   ├── 02_processed/      # Processed intermediate data
 │   └── 03_output/         # Cleaned and output data
 ├── documentation/         # Documentation files
-├── src/                   # Source code for the application
+├── src/hypermvp/          # Source code for the application
 │   ├── afrr/              # Modules for handling aFRR data
 │   ├── provider/          # Modules for handling provider data
 │   └── tests/             # Tests folder within `src`

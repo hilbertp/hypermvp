@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 from datetime import datetime
-from src.config import PROCESSED_DIR  # Ensure PROCESSED_DIR is defined in src/config.py
+from hypermvp.config import PROCESSED_DATA_DIR  # Ensure PROCESSED_DATA_DIR is defined in src/config.py
 
 def dump_afrr_data(cleaned_afrr_data, identifier="afrr"):
     """
@@ -11,11 +11,11 @@ def dump_afrr_data(cleaned_afrr_data, identifier="afrr"):
         identifier (str): Optional identifier for the file name.
     """
     # Ensure the directory exists
-    os.makedirs(PROCESSED_DIR, exist_ok=True)
+    os.makedirs(PROCESSED_DATA_DIR, exist_ok=True)
 
     # Create the filename
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = os.path.join(PROCESSED_DIR, f"cleaned_{identifier}_{timestamp}.csv")
+    filename = os.path.join(PROCESSED_DATA_DIR, f"cleaned_{identifier}_{timestamp}.csv")
 
     # Save the data
     cleaned_afrr_data.to_csv(filename, index=False)
