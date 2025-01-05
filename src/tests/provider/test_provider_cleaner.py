@@ -16,37 +16,48 @@ class TestCleaner(unittest.TestCase):
         })
 
     def test_clean_provider_data(self):
+        # Print dates before conversion
+        print("Before Conversion:")
+        for index, date in enumerate(self.raw_data["DELIVERY_DATE"]):
+            print(f"Row {index}: {date}, Type: {type(date)}")
+        print(self.raw_data.dtypes)
+
         cleaned_data = clean_provider_data(self.raw_data)
 
+        # Print dates after conversion
+        print("\nAfter Conversion:")
+        for index, date in enumerate(cleaned_data["DELIVERY_DATE"]):
+            print(f"Row {index}: {date}, Type: {type(date)}")
+        print(cleaned_data.dtypes)
+
+        # Print column type explicitly
+        print(f"Column dtype: {cleaned_data['DELIVERY_DATE'].dtype}")
+
         # Test if DELIVERY_DATE is converted to datetime
-        self.assertTrue(pd.api.types.is_datetime64_any_dtype(cleaned_data['DELIVERY_DATE']))
+        self.assertEqual(cleaned_data["DELIVERY_DATE"].dtype, "datetime64[ns]")
 
         # Test if ENERGY_PRICE_[EUR/MWh] values are converted to float64
         self.assertEqual(cleaned_data['ENERGY_PRICE_[EUR/MWh]'].dtype, 'float64')
 
-        # Test if rows with notes are handled correctly
-        self.assertIn("Warning: Found rows with notes", self._get_last_warning())
-        
         # Test if NOTE column is dropped
         self.assertNotIn('NOTE', cleaned_data.columns)
 
         # Test if unnecessary columns are dropped
         self.assertNotIn('ENERGY_PRICE_PAYMENT_DIRECTION', cleaned_data.columns)
 
+        # Test if POS_* rows are dropped
+        self.assertFalse((cleaned_data['PRODUCT'].str.startswith('POS_')).any())
+
     def test_energy_price_adjustment(self):
         cleaned_data = clean_provider_data(self.raw_data)
 
-        # Test adjusted values for PROVIDER_TO_GRID
+        # Test adjusted values for NEG_* products
+        self.assertAlmostEqual(cleaned_data.iloc[0]['ENERGY_PRICE_[EUR/MWh]'], 138.85, places=2)
+        self.assertAlmostEqual(cleaned_data.iloc[1]['ENERGY_PRICE_[EUR/MWh]'], 140.50, places=2)
         self.assertAlmostEqual(cleaned_data.iloc[2]['ENERGY_PRICE_[EUR/MWh]'], -135.10, places=2)
-        self.assertAlmostEqual(cleaned_data.iloc[3]['ENERGY_PRICE_[EUR/MWh]'], -140.50, places=2)
 
-        # Test conversion of invalid ENERGY_PRICE values
-        self.assertTrue(pd.isna(cleaned_data.iloc[2]['ENERGY_PRICE_[EUR/MWh]']))
-
-    def _get_last_warning(self):
-        # Helper to capture the last warning printed (mock logging system or output capture needed)
-        # For simplicity, assume captured logs or printed output can be parsed here.
-        return "Stub for testing warning messages"
+        # Ensure POS_* rows are not present
+        self.assertFalse((cleaned_data['PRODUCT'].str.startswith('POS_')).any())
 
 if __name__ == "__main__":
     unittest.main()
