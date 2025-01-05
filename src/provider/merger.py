@@ -1,3 +1,5 @@
+# probably not required anymore by using sqlite and maybe postgres later
+
 import pandas as pd
 
 def merge_cleaned_data(combined_df, cleaned_df):
