@@ -1,6 +1,7 @@
 
 # **HyperMVP**
 HyperMVP is a Python-based project designed to process, analyze, and clean data related to the German energy control market, particularly focusing on aFRR (automatic frequency restoration reserve) and provider data.
+This is the first software step to a great project that will allow us to harnesh free energy from the power grid to mine Bitcoin or to produce Hydrogen or similar. The transmission grid providers even pay us for the service of balancing the power grid as the same time. Triple win!
 
 ## **Features**
 - Structured data storage in directories for raw, processed, and output data (`data/`).
@@ -18,7 +19,7 @@ Before you begin, ensure you have the following installed:
 - `pip` (Python package manager)
 - pandas
 - numpy
-- other dependencies specified in requirements.txt
+- other dependencies specified in pyproject.toml
 
 
 ### **Installation**
@@ -87,4 +88,5 @@ For questions or suggestions, please contact:
 
 ---
 
-Would you like me to include placeholders for dependencies in `requirements.txt` or expand on any section? Let me know!
+Would you like me to include placeholders for dependencies in `pyproject.toml` or expand on any section? Let me know!
+Would you like to collaborate to find a way to gain free energy to mine bitcoin and get paid additionally for stabilizing the power grid? Then Hyperion Grid is the right project for you. 
