@@ -49,7 +49,6 @@ source venv/bin/activate
 ## **Project Structure**
 ```bash 
 hypermvp/
-├── .vscode/               # Visual Studio Code configurations
 ├── data/                  # Data directory for storage and processing
 │   ├── 01_raw/            # Raw unprocessed data
 │   ├── 02_processed/      # Processed intermediate data
@@ -61,7 +60,6 @@ hypermvp/
 ├── tests/                 # Tests folder
 │   ├── afrr/              # Tests for aFRR modules
 │   └── provider/          # Tests for provider modules
-└── .gitignore             # Git ignore file
 ```
 
 ---
@@ -88,5 +86,4 @@ For questions or suggestions, please contact:
 
 ---
 
-Would you like me to include placeholders for dependencies in `pyproject.toml` or expand on any section? Let me know!
 Would you like to collaborate to find a way to gain free energy to mine bitcoin and get paid additionally for stabilizing the power grid? Then Hyperion Grid is the right project for you. 
