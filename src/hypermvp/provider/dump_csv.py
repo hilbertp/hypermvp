@@ -1,27 +1,38 @@
 import os
 import pandas as pd
-from saver import save_to_duckdb
+from src.hypermvp.provider.loader import load_provider_file
+from src.hypermvp.provider.cleaner import clean_provider_data
+
+def save_to_csv(df, output_dir, filename):
+    """
+    Save a DataFrame to a CSV file.
+
+    Args:
+        df (pd.DataFrame): Data to save.
+        output_dir (str): Directory to save the CSV file.
+        filename (str): Name of the CSV file.
+    """
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    df.to_csv(os.path.join(output_dir, filename), index=False)
 
 # Define file paths and constants
-processed_dir = 'data/02_processed'
-db_path = 'data/processed_data.duckdb'
-table_name = 'provider_data'
+input_dir = 'data/01_raw'
+output_dir = 'data/02_processed'
 
-# Initialize an empty DataFrame for combined data
-combined_df = pd.DataFrame()
-
-# Process each file in the processed directory
-for filename in os.listdir(processed_dir):
-    if filename.endswith('.csv'):
-        filepath = os.path.join(processed_dir, filename)
+# Process each file in the input directory
+for filename in os.listdir(input_dir):
+    if filename.endswith('.xlsx'):
+        filepath = os.path.join(input_dir, filename)
         
-        # Read the cleaned data from CSV
-        cleaned_data = pd.read_csv(filepath)
+        # Load the raw data
+        raw_data = load_provider_file(filepath)
         
-        # Append the cleaned data to the combined DataFrame
-        combined_df = pd.concat([combined_df, cleaned_data], ignore_index=True)
+        # Clean the data
+        cleaned_data = clean_provider_data(raw_data)
+        
+        # Save the cleaned data to CSV
+        csv_filename = filename.replace('.xlsx', '.csv')
+        save_to_csv(cleaned_data, output_dir, csv_filename)
 
-# Save the combined data to DuckDB
-save_to_duckdb(combined_df, db_path, table_name)
-
-print("Data saving to DuckDB completed successfully.")
+print("Data dumping to CSV completed successfully.")
