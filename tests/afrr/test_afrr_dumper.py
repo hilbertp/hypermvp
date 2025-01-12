@@ -40,6 +40,7 @@ class TestAfrrDumper(unittest.TestCase):
         # Verify if the file was created in the mocked directory
         files = os.listdir(self.test_data_dir)
         test_files = [f for f in files if test_identifier in f and f.endswith('.csv')]
+        print(f"Files in test directory: {files}")
         self.assertTrue(len(test_files) > 0, "The dump file was not created.")
 
         # Verify content of the dumped file
@@ -49,4 +50,4 @@ class TestAfrrDumper(unittest.TestCase):
             pd.testing.assert_frame_equal(dumped_data, self.cleaned_data)
 
 if __name__ == "__main__":
-    unittest.main()
+    unittest.main(verbosity=2)
