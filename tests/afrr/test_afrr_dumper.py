@@ -12,14 +12,6 @@ class TestAfrrDumper(unittest.TestCase):
         cls.test_data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../tests_data/processed"))
         os.makedirs(cls.test_data_dir, exist_ok=True)
 
-    @classmethod
-    def tearDownClass(cls):
-        # Cleanup all files in tests_data/processed after tests
-        for file in os.listdir(cls.test_data_dir):
-            file_path = os.path.join(cls.test_data_dir, file)
-            if os.path.isfile(file_path):
-                os.remove(file_path)
-
     def setUp(self):
         # Create a sample cleaned DataFrame as mock data
         self.cleaned_data = pd.DataFrame({

@@ -1,7 +1,7 @@
 import os
 
 # Define base directory (project root)
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 
 # Data directories
 DATA_DIR = os.path.join(BASE_DIR, 'data')
@@ -23,3 +23,12 @@ PROVIDER_FILE_PATHS = [
     for file in os.listdir(RAW_DATA_DIR)
     if file.endswith('.xlsx') or file.endswith('.csv')  # Supports both formats
 ]
+
+# Log the paths for debugging
+print(f"BASE_DIR: {BASE_DIR}")
+print(f"DATA_DIR: {DATA_DIR}")
+print(f"RAW_DATA_DIR: {RAW_DATA_DIR}")
+print(f"PROCESSED_DATA_DIR: {PROCESSED_DATA_DIR}")
+print(f"OUTPUT_DATA_DIR: {OUTPUT_DATA_DIR}")
+print(f"AFRR_FILE_PATH: {AFRR_FILE_PATH}")
+print(f"PROVIDER_FILE_PATHS: {PROVIDER_FILE_PATHS}")

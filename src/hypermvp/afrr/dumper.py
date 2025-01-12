@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 from datetime import datetime
-from hypermvp.config import PROCESSED_DATA_DIR  # Ensure PROCESSED_DATA_DIR is defined in src/config.py
+from hypermvp.config import PROCESSED_DATA_DIR  # Ensure PROCESSED_DATA_DIR is defined in config.py
 
 def dump_afrr_data(cleaned_afrr_data, identifier="afrr"):
     """
@@ -23,6 +23,18 @@ def dump_afrr_data(cleaned_afrr_data, identifier="afrr"):
         # Save the data
         cleaned_afrr_data.to_csv(filename, index=False)
         print(f"aFRR data dumped to {filename}")
+
+        # Verify file existence immediately after creation
+        if os.path.isfile(filename):
+            print(f"File {filename} exists after creation.")
+        else:
+            print(f"File {filename} does not exist after creation.")
+
+        # List the directory contents after dumping the file
+        files = os.listdir(PROCESSED_DATA_DIR)
+        print(f"Files in {PROCESSED_DATA_DIR} after dumping:")
+        for file in files:
+            print(file)
 
     except Exception as e:
         print(f"Error dumping data: {e}")
