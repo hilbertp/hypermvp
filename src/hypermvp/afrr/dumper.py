@@ -1,44 +1,28 @@
 import os
-import pandas as pd
 from datetime import datetime
-from hypermvp.config import PROCESSED_DATA_DIR  # Ensure PROCESSED_DATA_DIR is defined in config.py
 
-def dump_afrr_data(cleaned_afrr_data, identifier="afrr"):
+def dump_afrr_data(cleaned_afrr_data, month, year, identifier="afrr"):
     """
     Dumps the cleaned aFRR data to the processed directory.
+
     Args:
         cleaned_afrr_data (pd.DataFrame): Cleaned aFRR data.
+        month (int): Month of the data.
+        year (int): Year of the data.
         identifier (str): Optional identifier for the file name.
     """
     try:
         # Ensure the directory exists
         os.makedirs(PROCESSED_DATA_DIR, exist_ok=True)
-        print(f"Directory ensured: {PROCESSED_DATA_DIR}")
 
-        # Create the filename
+        # Create the filename with month and year metadata
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = os.path.join(PROCESSED_DATA_DIR, f"cleaned_{identifier}_{timestamp}.csv")
-        print(f"Filename created: {filename}")
+        filename = os.path.join(
+            PROCESSED_DATA_DIR, f"cleaned_{identifier}_{year}_{month:02d}_{timestamp}.csv"
+        )
 
         # Save the data
         cleaned_afrr_data.to_csv(filename, index=False)
         print(f"aFRR data dumped to {filename}")
-
-        # Verify file existence immediately after creation
-        if os.path.isfile(filename):
-            print(f"File {filename} exists after creation.")
-        else:
-            print(f"File {filename} does not exist after creation.")
-
-        # List the directory contents after dumping the file
-        files = os.listdir(PROCESSED_DATA_DIR)
-        print(f"Files in {PROCESSED_DATA_DIR} after dumping:")
-        for file in files:
-            print(file)
-
     except Exception as e:
         print(f"Error dumping data: {e}")
-
-# Example usage:
-# Assume `cleaned_afrr` is a pandas DataFrame containing the cleaned aFRR data.
-# dump_afrr_data(cleaned_afrr, "daily_afrr")

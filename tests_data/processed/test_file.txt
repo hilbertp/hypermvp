@@ -1,1 +1,76 @@
-asd
++++
+title = 'Folder and Permission Management'
+weight = 3
+type = 'docs'
+prev='/documentation/getting-started/advanced-installation-guide/'
+next='data-and-model-management/'
++++
+
+The KI-Backbone provides a structured folder system to help you organise your projects. [Folders](/user-manual/documentation/glossary/#folder) in this context represent logical workspaces, in which [Resources](/user-manual/documentation/glossary/#resource) of a particular project can be organised, managed and shared.
+
+## Managing Folders
+
+### Creating a new Folder
+
+![Folder List](images/KIBB_Folders.jpg)
+In the "All Folders" overview, you can see all the folders that you have created or that have been shared with you. With a click on the "Add Folder" button you can create a new folder.
+
+![Add New Folder](images/KIBB_NewFolder.jpg)
+Enter a name and description in the dialogue, select the storage location (bucket) and click on "Create" to create a new folder. Optionally, you can grant the "Viewer" permission to all users of the KI-Backbone by choosing the "Public" option.
+
+### Working with a Folder
+
+![New Empty Folder](images/KIBB_EmptyFolder.jpg)
+You can edit the metadata of a folder by clicking the more menu in the "Folder Details" section and updating the desired content in the appearing dialogue.
+
+For detailed instruction on how to work with resources within a folder, please refer to the chapter [Data and Model Management](/user-manual/documentation/data-and-model-management/).
+
+{{< callout type="info" >}}
+Only empty folders can be deleted. If a folder contains a finalized commit it cannot be deleted anymore for traceability purposes.
+{{< /callout >}}
+
+## Managing Permissions
+<!-- We link to this section from the "Manage Permissions" dialog in the KI-BB. If you change this heading you also need to update the link in the UI! -->
+
+To engage in collaborative activities, you can proactively share your Resources with other users and groups (“push”). In addition, you can request access to Resources that are already discoverable by you based on the metadata, but for which access to the content is not yet accessible to you (“pull”).
+
+[Permissions](/user-manual/documentation/glossary/#permission) and access controls can be managed on folder (e.g., “kibb-pilot-use”) and on group (e.g., “kibb-engineers”) level. This ensures that you have sufficient control over the access rights of your Resources but still enables you to smoothly collaborate with partners and securely share Resources.
+
+### Giving Permissions to Users & Groups
+
+![Manage Permissions button on folder detail view](images/manage-permissions.png) Within a folder, an admin can add and remove users and groups from different roles. As seen in the picture above, an admin can "Manage Permissions". Upon clicking that button, the interface which allows adding and remove users or groups opens as dialogue box, as
+seen below.
+
+![Add user interface](images/KIBB_ManagePermissions.jpg)
+
+1. Select a user or group with whom you want to share the folder
+2. Select one or more [permissions](#available-permissions)
+3. Click "Add" to add the user/group to the list
+4. Click "Save" to save the permissions and close the dialogue
+
+### Requesting Permissions from Admins
+
+A Viewer can request higher permissions from folder admins. On any resource page that belongs to a desired folder, click the “Request Permissions” button and fill in the request form, as shown below.
+
+![Requests Permissions interface](images/KIBB_RequestPermission_Dialog.jpg)
+
+### Deciding on the Request
+
+Folder admins are provided with an overview of all requests for their folders via the permissions screen, which they can access by clicking on the Lock icon on the top right (1) and subsequently switching to the tab “Incoming Requests”. By clicking on the respective button in the “Actions” column, they can approve or reject the requests. By clicking on the Request item they can review details of the request in a separate page.
+
+![Deciding on Permission Request](images/requests-permissions-2.png)
+
+### Available Permissions
+
+|Name                   |Permission                                         |
+|:----------------------|:---------------------------------------------------|
+|Viewer                |Read metadata on all Resources in a Folder. Cannot upload or download them. |
+|Metrics Collaborator  |Read and write access to both content and metadata on the Metrics Resource in this Folder. |
+|Dataset Collaborator  |Read and write access to both content and metadata on the Dataset Resource in this Folder. |
+|Model Collaborator    |Read and write access to both content and metadata on the Model Resource in this Folder. |
+|Full Collaborator     |Read and write access to both content and metadata on all Resources in this Folder.|
+|Admin | Read and write access to both content and metadata on all Entities in this Folder. Only role with the ability to also change others Permissions and delete anything.|
+|Auditor | Read/Write usage-scenario, audit-requirement, audit-template and audit report.|
+|Audit Viewer | Read usage-scenario, audit-requirement, audit-template and audit-report.|
+|Audit Context Collaborator | Read/Write usage-scenario, audit-requirement and audit-template. Read audit report. |
+|Data Transformation Collaborator | Read/Write folder, dataset, commit and all data transformation and pipelines entities.|
