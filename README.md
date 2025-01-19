@@ -1,13 +1,16 @@
-
 # **HyperMVP**
+
 HyperMVP is a Python-based project designed to process, analyze, and clean data related to the German energy control market, particularly focusing on aFRR (automatic frequency restoration reserve) and provider data.
-This is the first software step to a great project that will allow us to harnesh free energy from the power grid to mine Bitcoin or to produce Hydrogen or similar. The transmission grid providers even pay us for the service of balancing the power grid as the same time. Triple win!
+This is the first software step to a great project that will allow us to harness free energy from the power grid to mine Bitcoin or to produce Hydrogen or similar. The transmission grid providers even pay us for the service of balancing the power grid at the same time. Triple win!
 
 ## **Features**
-- Structured data storage in directories for raw, processed, and output data (`data/`).
-- Python-based automation for data processing and analysis within the `src/` folder.
-- Main entry point to execute the project (`main.py`).
-- Integrated data processing tests, likely within the `src/` folder (e.g., `test_loader.py`).
+- **Data Handling:** Comprehensive data ingestion and processing pipeline, including storage in structured directories for raw, processed, and output data (`data/`).
+- **aFRR Data Analysis:** Dedicated modules for parsing, cleaning, and analyzing aFRR market data to identify opportunities for cost-efficient energy usage.
+- **Provider Data Management:** Tools for handling and comparing provider lists, ensuring compliance with transmission grid operator standards.
+- **Automation:** Python-based scripts within the `src/` folder to streamline repetitive data processing tasks.
+- **Integration Testing:** Built-in tests for key functionalities, including loaders and data cleaning scripts, ensuring reliability of the processing pipeline.
+- **Energy Market Optimization:** Analytical tools to predict and simulate marginal prices, aiding in decision-making for energy consumption and grid stabilization.
+- **Flexible Output:** Processed data is exportable in formats suitable for downstream applications like pricing analysis or energy optimization.
 
 ---
 
@@ -15,36 +18,31 @@ This is the first software step to a great project that will allow us to harnesh
 
 ### **Prerequisites**
 Before you begin, ensure you have the following installed:
-- Python 3.8 or later
-- `pip` (Python package manager)
-- pandas
-- numpy
-- other dependencies specified in pyproject.toml
+- Python 3.12 or later
+- Poetry (Python dependency and environment manager)
+- Any other dependencies specified in `pyproject.toml`
 
+---
 
 ### **Installation**
+
 1. Clone the repository:
    ```bash
    git clone https://github.com/hilbertp/hypermvp.git
    cd hypermvp
    ```
-2. Create and activate a virtual environment (optional but recommended):
 
-on Windows:
-```bash
-.\venv\Scripts\activate
-```
-on macOS/Linux:
-```bash
-source venv/bin/activate
-```
-3. Install the package as editable, with required dependencies:
-```bash
-   pip install -e .
-```
+2. Install dependencies using Poetry:
+   ```bash
+   poetry install
+   ```
+
+3. Activate the Poetry-managed environment:
+   ```bash
+   poetry shell
+   ```
 
 ---
-
 
 ## **Project Structure**
 ```bash 
@@ -61,6 +59,28 @@ hypermvp/
 │   ├── afrr/              # Tests for aFRR modules
 │   └── provider/          # Tests for provider modules
 ```
+
+---
+
+## **Known Issues with Hatchling**
+
+Initially, the project used `hatchling` as the build system and `hatch` for environment and dependency management. However, several issues were encountered:
+
+1. **Environment Conflicts:**
+   - `hatch env create` frequently resulted in "Environment already exists" errors without clear resolution steps.
+   - Difficulty in identifying and locating where `hatch` environments were stored, even with `hatch env show` commands.
+
+2. **Integration Problems:**
+   - `hatch` environments sometimes conflicted with VSCode configurations, leading to broken Python interpreter paths.
+   - VSCode repeatedly failed to recognize the `.venv` folder managed by `hatch`.
+
+3. **Dependency Management:**
+   - Complexities arose with the `pyproject.toml` file for specifying dependencies. Certain dependencies failed to build or resolve properly (e.g., `duckdb` requiring specific build tools).
+
+4. **Lack of Transparency:**
+   - Debugging issues with `hatch` often required exploring opaque logs or relying on guesswork, slowing development progress.
+
+Due to these recurring problems, the project transitioned to using `Poetry`, which provides a more intuitive and transparent workflow for dependency management and virtual environments.
 
 ---
 
@@ -81,9 +101,9 @@ This project is licensed under the [MIT License](LICENSE). See `LICENSE` for det
 
 ## **Contact**
 For questions or suggestions, please contact:  
-- ** Philipp Hilbert**, philipp (at) hyperion-grid (dot) com  
+- **Philipp Hilbert**, philipp (at) hyperion-grid (dot) com  
 - [GitHub Profile](https://github.com/hilbertp)
 
 ---
 
-Would you like to collaborate to find a way to gain free energy to mine bitcoin and get paid additionally for stabilizing the power grid? Then Hyperion Grid is the right project for you. 
+Would you like to collaborate to find a way to gain free energy to mine bitcoin and get paid additionally for stabilizing the power grid? Then Hyperion Grid is the right project for you.
