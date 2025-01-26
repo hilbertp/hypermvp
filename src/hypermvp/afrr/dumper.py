@@ -1,6 +1,7 @@
 import os
 from datetime import datetime
 
+
 def dump_afrr_data(cleaned_afrr_data, month, year, identifier="afrr"):
     """
     Dumps the cleaned aFRR data to the processed directory.
@@ -18,7 +19,8 @@ def dump_afrr_data(cleaned_afrr_data, month, year, identifier="afrr"):
         # Create the filename with month and year metadata
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = os.path.join(
-            PROCESSED_DATA_DIR, f"cleaned_{identifier}_{year}_{month:02d}_{timestamp}.csv"
+            PROCESSED_DATA_DIR,
+            f"cleaned_{identifier}_{year}_{month:02d}_{timestamp}.csv",
         )
 
         # Save the data

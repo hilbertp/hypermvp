@@ -19,19 +19,23 @@ def save_afrr_to_duckdb(cleaned_afrr_data, month, year, table_name="afrr_data"):
         os.makedirs(PROCESSED_DATA_DIR, exist_ok=True)
 
         # Add month and year columns to the data
-        cleaned_afrr_data['month'] = month
-        cleaned_afrr_data['year'] = year
+        cleaned_afrr_data["month"] = month
+        cleaned_afrr_data["year"] = year
 
         # Connect to the DuckDB database
         conn = duckdb.connect(DUCKDB_PATH)
 
         # Create the table if it doesn't exist
-        conn.execute(f"CREATE TABLE IF NOT EXISTS {table_name} AS SELECT * FROM cleaned_afrr_data LIMIT 0;")
+        conn.execute(
+            f"CREATE TABLE IF NOT EXISTS {table_name} AS SELECT * FROM cleaned_afrr_data LIMIT 0;"
+        )
 
         # Insert data into the table
         conn.execute(f"INSERT INTO {table_name} SELECT * FROM cleaned_afrr_data;")
 
-        print(f"aFRR data for {month}/{year} successfully saved to table '{table_name}' in DuckDB.")
+        print(
+            f"aFRR data for {month}/{year} successfully saved to table '{table_name}' in DuckDB."
+        )
     except Exception as e:
         print(f"Error saving aFRR data to DuckDB: {e}")
     finally:

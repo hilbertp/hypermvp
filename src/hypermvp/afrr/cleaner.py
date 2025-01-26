@@ -13,7 +13,7 @@ def filter_negative_50hertz(data):
         data.columns = data.columns.astype(str).str.strip()
 
         # Select relevant columns
-        relevant_data = data[['Datum', 'von', 'bis', '50Hertz (Negativ)']]
+        relevant_data = data[["Datum", "von", "bis", "50Hertz (Negativ)"]]
 
         return relevant_data
     except KeyError as e:

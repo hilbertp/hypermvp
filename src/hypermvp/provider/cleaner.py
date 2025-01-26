@@ -1,5 +1,6 @@
 import pandas as pd
 
+
 def clean_provider_data(df):
     """
     Clean and transform provider offer data.
@@ -12,27 +13,33 @@ def clean_provider_data(df):
     """
     # Validate required columns
     required_columns = [
-        'DELIVERY_DATE', 'PRODUCT', 'ENERGY_PRICE_[EUR/MWh]',
-        'ENERGY_PRICE_PAYMENT_DIRECTION', 'ALLOCATED_CAPACITY_[MW]', 'NOTE'
+        "DELIVERY_DATE",
+        "PRODUCT",
+        "ENERGY_PRICE_[EUR/MWh]",
+        "ENERGY_PRICE_PAYMENT_DIRECTION",
+        "ALLOCATED_CAPACITY_[MW]",
+        "NOTE",
     ]
     missing_columns = [col for col in required_columns if col not in df.columns]
     if missing_columns:
         raise ValueError(f"Missing required columns: {missing_columns}")
 
     # Warn about rows with notes
-    if 'NOTE' in df.columns and df['NOTE'].notnull().any():
-        rows_with_notes = df[df['NOTE'].notnull()]
+    if "NOTE" in df.columns and df["NOTE"].notnull().any():
+        rows_with_notes = df[df["NOTE"].notnull()]
         print("Warning: The following rows contain notes:")
         print(rows_with_notes)
 
     # Drop rows with POS_* in the PRODUCT column
-    df = df[~df['PRODUCT'].str.startswith('POS_')].copy()
+    df = df[~df["PRODUCT"].str.startswith("POS_")].copy()
 
     # Drop the NOTE column
     df = df.drop(columns=["NOTE"])
 
     # Convert DELIVERY_DATE to datetime
-    df["DELIVERY_DATE"] = pd.to_datetime(df["DELIVERY_DATE"], format="%m/%d/%Y", errors="coerce")
+    df["DELIVERY_DATE"] = pd.to_datetime(
+        df["DELIVERY_DATE"], format="%m/%d/%Y", errors="coerce"
+    )
 
     # Ensure the column remains as datetime64 even if some entries are NaT
     if not pd.api.types.is_datetime64_any_dtype(df["DELIVERY_DATE"]):
