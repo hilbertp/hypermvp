@@ -42,6 +42,10 @@ Before you begin, ensure you have the following installed:
    poetry shell
    ```
 
+4. Set up the environment using setup.sh:
+   ```bash
+   source setup.sh
+   ```
 ---
 
 ## **Project Structure**
@@ -59,28 +63,6 @@ hypermvp/
 │   ├── afrr/              # Tests for aFRR modules
 │   └── provider/          # Tests for provider modules
 ```
-
----
-
-## **Known Issues with Hatchling**
-
-Initially, the project used `hatchling` as the build system and `hatch` for environment and dependency management. However, several issues were encountered:
-
-1. **Environment Conflicts:**
-   - `hatch env create` frequently resulted in "Environment already exists" errors without clear resolution steps.
-   - Difficulty in identifying and locating where `hatch` environments were stored, even with `hatch env show` commands.
-
-2. **Integration Problems:**
-   - `hatch` environments sometimes conflicted with VSCode configurations, leading to broken Python interpreter paths.
-   - VSCode repeatedly failed to recognize the `.venv` folder managed by `hatch`.
-
-3. **Dependency Management:**
-   - Complexities arose with the `pyproject.toml` file for specifying dependencies. Certain dependencies failed to build or resolve properly (e.g., `duckdb` requiring specific build tools).
-
-4. **Lack of Transparency:**
-   - Debugging issues with `hatch` often required exploring opaque logs or relying on guesswork, slowing development progress.
-
-Due to these recurring problems, the project transitioned to using `Poetry`, which provides a more intuitive and transparent workflow for dependency management and virtual environments.
 
 ---
 
