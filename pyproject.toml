@@ -1,14 +1,12 @@
-[project]
+[tool.poetry]
 name = "hypermvp"
 version = "0.1.0"
-description = ""
-authors = [
-    {name = "Philipp Hilbert", email = "philipp@hyperion-grid.com"}
-]
+description = "Data Analysis of the German Energy Market"
+authors = ["Philipp Hilbert <philipp@hyperion-grid.com>"]
 readme = "README.md"
-requires-python = ">=3.12"
 
 [tool.poetry.dependencies]
+python = ">=3.12"
 et-xmlfile = "2.0.0"
 numpy = "2.1.3"
 openpyxl = "3.1.5"
