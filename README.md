@@ -16,12 +16,12 @@ This is the first software step to a great project that will allow us to harness
 
 ## **Getting Started**
 
-> **Warning for Windows Users:** We strongly recommend working on this project in WSL2 (Windows Subsystem for Linux). This ensures compatibility and prevents issues like crashes or performance bottlenecks that occur when working on Windows-mounted directories (/mnt/...).
+> **Warning for Windows Users:** We strongly recommend working on this project in WSL2 (Windows Subsystem for Linux) because Windows introduces unnecessary complexity when working with Python environments, dependency management, and system-level operations. WSL2 provides a native Linux environment that ensures compatibility, simplifies package management, and prevents issues with file paths, symlinks, and permissions that are common when using Windows for development.
 
 
 
 ### **Setting Up WSL2** 
-Mac and Linux User can skip ahead to header "Development Environment Setup"
+Mac and Linux User can skip ahead to next chapter "Development Environment Setup"
 
 1. **Install WSL2**: Open PowerShell as Administrator and run
    ```bash
@@ -31,19 +31,16 @@ Mac and Linux User can skip ahead to header "Development Environment Setup"
 
 1. **Verify Installation**: Open a terminal and run:   
     ```bash
-      wsl --install
+   wsl --list --verbose   
    ```
    Ensure that WSL2 is installed and running.
 
-1. **Set a Default Linux Distribution:** If needed, set Ubuntu as your default distro:
-    ```bash
-      wsl --set-default Ubuntu
+1. **Install Ubuntu 24.04:**
+   ```bash
+   wsl --install Ubuntu-24.04   
    ```
 
-1. **Start WSL**: Launch WSL by simply typing:
-    ```bash
-      wsl
-   ```
+
 
 ---
 
@@ -53,9 +50,13 @@ Mac and Linux User can skip ahead to header "Development Environment Setup"
       sudo apt update
       sudo apt install git
    ```
-1. **Download the Repo**: Clone the repo on a unix/linux system, **do not** use a mounted windows directory! If your path looks like this `/mnt/<drive_letter>/path/to/directory` you are likely to run into problems.
+1. **Install Required Build Dependencies**
    ```bash
-      git clone https://github.com/hilbertp/hypermvp
+         sudo apt update
+         sudo apt install -y build-essential libssl-dev zlib1g-dev \
+            libbz2-dev libreadline-dev libsqlite3-dev curl \
+            llvm libncursesw5-dev xz-utils tk-dev libxml2-dev \
+            libxmlsec1-dev libffi-dev liblzma-dev
    ```
 
 1. **Programming Language:** Install pyenv for managing Python versions (or just install python 3.12.0+ alternatively):
@@ -82,12 +83,21 @@ Mac and Linux User can skip ahead to header "Development Environment Setup"
       export PATH="$HOME/.local/bin:$PATH"   
    ```
    Restart your terminal.
+   ```bash
+      source ~/.bashrc   
+   ```
+
+1. **Download the Repo**: Clone the repo on a unix/linux system, **do not** use a mounted windows directory! If your path looks like this `/mnt/<drive_letter>/path/to/directory` you are likely to run into problems.
+   ```bash
+      git clone https://github.com/hilbertp/hypermvp
+   ```
 
 1. **Installing the Dependencies and Environment:** Run the Setup Script:
 
    ```bash
       source setup.sh   
    ```
+
 
 ## **Project Structure** 
 ```bash 
