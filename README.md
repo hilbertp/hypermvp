@@ -17,36 +17,78 @@ This is the first software step to a great project that will allow us to harness
 ## **Getting Started**
 
 ### **Prerequisites**
-Before you begin, ensure you have the following installed:
-- Python 3.12 or later
-- Poetry (Python dependency and environment manager)
-- Any other dependencies specified in `pyproject.toml`
+#### Recommended: Work on WSL2 for Windows Users
 
+If you are a Windows user, we strongly recommend working on this project in WSL2 (Windows Subsystem for Linux). This ensures compatibility and prevents issues like crashes or performance bottlenecks that occur when working on Windows-mounted directories (/mnt/...).
+
+#### **Setting Up WSL2**
+1. **Install WSL2**:
+   Open PowerShell as Administrator and run:
+   ```bash
+   wsl --install
+   ```
+Restart your system if prompted.
+
+2. **Verify Installation**: Open a terminal and run:   
+    ```bash
+      wsl --install
+   ```
+   Ensure that WSL2 is installed and running.
+
+3. **Set a Default Linux Distribution:**: If needed, set Ubuntu as your default distro:
+    ```bash
+      wsl --set-default Ubuntu
+   ```
+
+4. **Start WSL**: Launch WSL by simply typing:
+    ```bash
+      wsl
+   ```
+5. **Install Git in WSL**: Once inside WSL, ensure Git is installed:
+   ```bash
+      sudo apt update
+      sudo apt install git
+   ```
+
+#### **Working in WSL2**
+1. Clone the repo on a directory on the WSL, **do not** use a mounted windows directory!
+  ```bash
+      git clone https://github.com/hilbertp/hypermvp
+   ```
 ---
 
 ### **Installation**
 
-1. Clone the repository:
+1. **Install Prerequisites:** Inside WSL, install the following:
+   -  **pyenv** for managing Python versions:
    ```bash
-   git clone https://github.com/hilbertp/hypermvp.git
-   cd hypermvp
+      curl https://pyenv.run | bash   
+   ```
+      Add the following to your `~/.bashrc` or `~/.zshrc`:
+   ```bash
+      export PATH="$HOME/.pyenv/bin:$PATH"
+      eval "$(pyenv init --path)"
+      eval "$(pyenv init -)"   
+   ```
+Restart your terminal and install Python 3.12:   
+   ```bash
+      pyenv install 3.12.0
+      pyenv global 3.12.0
+   ```
+   - **Poetry** for dependency management:
+   ```bash
+      curl -sSL https://install.python-poetry.org | python3 -
+   ```
+   Add Poetry to your path:
+   ```bash
+      export PATH="$HOME/.local/bin:$PATH"   
    ```
 
-2. Install dependencies using Poetry:
-   ```bash
-   poetry install
-   ```
 
-3. Activate the Poetry-managed environment:
-   ```bash
-   poetry shell
-   ```
 
-4. Set up the environment using setup.sh:
-   ```bash
-   source setup.sh
-   ```
----
+
+
+
 
 ## **Project Structure**
 ```bash 
