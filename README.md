@@ -16,81 +16,80 @@ This is the first software step to a great project that will allow us to harness
 
 ## **Getting Started**
 
-### **Prerequisites**
-#### Recommended: Work on WSL2 for Windows Users
+> **Warning for Windows Users:** We strongly recommend working on this project in WSL2 (Windows Subsystem for Linux). This ensures compatibility and prevents issues like crashes or performance bottlenecks that occur when working on Windows-mounted directories (/mnt/...).
 
-If you are a Windows user, we strongly recommend working on this project in WSL2 (Windows Subsystem for Linux). This ensures compatibility and prevents issues like crashes or performance bottlenecks that occur when working on Windows-mounted directories (/mnt/...).
 
-#### **Setting Up WSL2**
-1. **Install WSL2**:
-   Open PowerShell as Administrator and run:
+
+### **Setting Up WSL2** 
+Mac and Linux User can skip ahead to header "Development Environment Setup"
+
+1. **Install WSL2**: Open PowerShell as Administrator and run
    ```bash
    wsl --install
    ```
-Restart your system if prompted.
+   Restart your system if prompted.
 
-2. **Verify Installation**: Open a terminal and run:   
+1. **Verify Installation**: Open a terminal and run:   
     ```bash
       wsl --install
    ```
    Ensure that WSL2 is installed and running.
 
-3. **Set a Default Linux Distribution:**: If needed, set Ubuntu as your default distro:
+1. **Set a Default Linux Distribution:** If needed, set Ubuntu as your default distro:
     ```bash
       wsl --set-default Ubuntu
    ```
 
-4. **Start WSL**: Launch WSL by simply typing:
+1. **Start WSL**: Launch WSL by simply typing:
     ```bash
       wsl
    ```
-5. **Install Git in WSL**: Once inside WSL, ensure Git is installed:
+
+---
+
+### **Development Environment Setup**
+1. **Install Git in WSL**: Once inside WSL, ensure Git is installed:
    ```bash
       sudo apt update
       sudo apt install git
    ```
-
-#### **Working in WSL2**
-1. Clone the repo on a directory on the WSL, **do not** use a mounted windows directory!
-  ```bash
+1. **Download the Repo**: Clone the repo on a unix/linux system, **do not** use a mounted windows directory! If your path looks like this `/mnt/<drive_letter>/path/to/directory` you are likely to run into problems.
+   ```bash
       git clone https://github.com/hilbertp/hypermvp
    ```
----
 
-### **Installation**
-
-1. **Install Prerequisites:** Inside WSL, install the following:
-   -  **pyenv** for managing Python versions:
+1. **Programming Language:** Install pyenv for managing Python versions (or just install python 3.12.0+ alternatively):
    ```bash
       curl https://pyenv.run | bash   
    ```
-      Add the following to your `~/.bashrc` or `~/.zshrc`:
+   Add the following to your `~/.bashrc` or `~/.zshrc`:
    ```bash
       export PATH="$HOME/.pyenv/bin:$PATH"
       eval "$(pyenv init --path)"
       eval "$(pyenv init -)"   
    ```
-Restart your terminal and install Python 3.12:   
+   Restart your terminal and install Python 3.12:   
    ```bash
       pyenv install 3.12.0
       pyenv global 3.12.0
    ```
-   - **Poetry** for dependency management:
+2. **Dependencies and Environment Management:** Install Poetry which will setup up a virtual environment with exactly the same dependencies as the one's of other contributors of this project:
    ```bash
       curl -sSL https://install.python-poetry.org | python3 -
    ```
-   Add Poetry to your path:
+   Add Poetry to your PATH environment variable:
    ```bash
       export PATH="$HOME/.local/bin:$PATH"   
    ```
+   Restart your terminal.
 
+1. **Installing the Dependencies and Environment:** Run the Setup Script:
 
+   ```bash
+      source setup.sh   
+   ```
 
-
-
-
-
-## **Project Structure**
+## **Project Structure** 
 ```bash 
 hypermvp/
 ├── data/                  # Data directory for storage and processing
@@ -130,4 +129,4 @@ For questions or suggestions, please contact:
 
 ---
 
-Would you like to collaborate to find a way to gain free energy to mine bitcoin and get paid additionally for stabilizing the power grid? Then Hyperion Grid is the right project for you.
+Would you like to collaborate to find a way to gain free energy to mine bitcoin and get paid additionally for stabilizing the power grid? Then Hyperion is the right project for you.
