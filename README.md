@@ -98,6 +98,24 @@ Mac and Linux User can skip ahead to next chapter "Development Environment Setup
       source setup.sh   
    ```
 
+### Returning to Work
+Whenever you restart your system and want to resume working on the project, follow these steps:
+1. Start WSL
+   ```bash
+      wsl   
+   ```
+1. Navigate to Your Project Directory
+   ```bash
+      cd ~/hypermvp   
+   ```
+1. Activate the Virtual Environment (If Poetry is used, this happens automatically when running commands, but you can force it if needed)
+   ```bash
+      poetry shell
+   ```
+1. Ensure Dependencies Are Installed
+   ```bash
+      poetry install
+   ```
 
 ## **Project Structure** 
 ```bash 
