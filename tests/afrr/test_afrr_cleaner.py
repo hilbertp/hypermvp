@@ -23,19 +23,22 @@ class TestFilterNegative50Hertz(unittest.TestCase):
         # Check columns and values before filtering
         print("Data before filtering:")
         print(data)
-        print("Columns in mock data before filtering:", data.columns.tolist())
-        
-        # Apply the filter function (it should only return the specified columns)
+        print("Columns in mock data before filtering:", list(data.columns))
+
+        # Run the filter function
         filtered_data = filter_negative_50hertz(data)
         
-        # Check columns and values after filtering
+        # Print filtered data
         print("Data after filtering:")
         print(filtered_data)
-        print("Columns in filtered data:", filtered_data.columns.tolist())
+        print("Columns in filtered data:", list(filtered_data.columns))
         
         # Assertions
-        self.assertIsNotNone(filtered_data)  # Ensure the result is not None
-        self.assertListEqual(filtered_data.columns.tolist(), ['Datum', 'von', 'bis', '50Hertz (Negativ)'])  # Ensure we only have the expected columns
+        expected_columns = ['Datum', 'von', 'bis', '50Hertz (Negativ)']
+        self.assertEqual(list(filtered_data.columns), expected_columns)
+        self.assertEqual(len(filtered_data), len(data))
+        self.assertEqual(filtered_data['50Hertz (Negativ)'].tolist(), [4.364, 10.052])
+        print("Assertions passed!")
 
 if __name__ == '__main__':
     unittest.main()

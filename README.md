@@ -108,13 +108,13 @@ Whenever you restart your system and want to resume working on the project, foll
    ```bash
       cd ~/hypermvp   
    ```
-1. Activate the Virtual Environment (If Poetry is used, this happens automatically when running commands, but you can force it if needed)
-   ```bash
-      poetry shell
-   ```
 1. Ensure Dependencies Are Installed
    ```bash
       poetry install
+   ```
+1. Activate the Virtual Environment
+   ```bash
+      source $(poetry env info --path)/bin/activate   
    ```
 
 ## **Project Structure** 

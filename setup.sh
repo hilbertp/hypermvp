@@ -1,20 +1,23 @@
 #!/bin/bash
 
-# Exit script on error
-set -e
-
-# Clear any existing virtual environment
+# Remove any existing virtual environment
 echo "Removing existing virtual environment..."
-poetry env remove python3 || true
+poetry env remove python
 
-# Install dependencies
+# Install dependencies using Poetry
 echo "Installing dependencies..."
 poetry install
 
-# Activate virtual environment
+# Activate the virtual environment
 echo "Activating virtual environment..."
 source $(poetry env info --path)/bin/activate
 
+# Update pip
+echo "Updating pip..."
+pip install --upgrade pip
+
 # Verify installed dependencies
-echo "Installed dependencies:"
-poetry show
+echo "Verifying installed dependencies..."
+pip list
+
+echo "Setup complete."

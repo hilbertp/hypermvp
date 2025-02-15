@@ -6,25 +6,37 @@ from hypermvp.provider.loader import load_provider_file
 class TestLoader(unittest.TestCase):
 
     def setUp(self):
-        # Point to the actual .xlsx file in your directory
-        self.valid_xlsx = "G:/hyperMVP/data/01_raw/provider_list_2024_09_01.xlsx"
+        # Define the path to the test provider file
+        self.valid_xlsx = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "../tests/tests_data/raw/provider_list_2024_09_01_MOCK.xlsx")
+        )
 
     def test_load_xlsx_file(self):
-        """Test loading a valid XLSX file."""
-        if os.path.exists(self.valid_xlsx):
-            df = load_provider_file(self.valid_xlsx)
-            self.assertIsInstance(df, pd.DataFrame)
-            self.assertFalse(df.empty)
-            
-            # Print some rows and columns to confirm it loaded correctly
-            print("\n--- DataFrame Info ---")
-            print(df.info())  # General info about the DataFrame
-            print("\n--- First Few Rows ---")
-            print(df.head())  # First 5 rows of the DataFrame
-            print("\n--- Columns ---")
-            print(df.columns.tolist())  # List of column names
-        else:
-            self.skipTest(f"File {self.valid_xlsx} does not exist.")
+        # Print test header
+        print("\n=== Provider File Loader Test ===")
+        print(f"Testing file: {os.path.relpath(self.valid_xlsx)}")
+        
+        # Check if the test file exists
+        if not os.path.exists(self.valid_xlsx):
+            print(f"ERROR: Test file not found at {os.path.relpath(self.valid_xlsx)}")
+            self.skipTest("Test file not found")
+            return
+
+        # Load the provider file using the loader function
+        df = load_provider_file(self.valid_xlsx)
+        
+        # Assert that the result is a DataFrame and it's not empty
+        self.assertIsInstance(df, pd.DataFrame)
+        self.assertFalse(df.empty)
+        
+        # Print the content of the DataFrame
+        print("\nDataFrame Content:")
+        print(df.head())
+        
+        # Print success message with the number of rows loaded
+        print(f"\nSuccess: Loaded {len(df)} rows")
+        print("=======================\n")
 
 if __name__ == "__main__":
-    unittest.main()
+    # Run the unit test with verbosity level 2 for detailed output
+    unittest.main(verbosity=2)

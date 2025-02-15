@@ -1,29 +1,34 @@
 import pandas as pd
 import os
 
-
 def load_afrr_data(file_path):
     """
-    Loads CSV data into a Pandas DataFrame, extracts month and year from the file name, and formats the date.
+    Loads CSV data into a Pandas DataFrame and retrieves month and year from the data inside the first column ("Datum").
 
     Args:
         file_path (str): The path to the CSV file.
 
     Returns:
-        tuple: (pd.DataFrame, int, int): Loaded data, extracted month, and year.
+        tuple: (pd.DataFrame, dict): Loaded data and metadata containing month, year, and number of rows.
     """
     try:
-        # Extract month and year from file name
-        file_name = os.path.basename(file_path)
-        month, year = map(
-            int, file_name.split("_")[1:3]
-        )  # Assumes file names like "aFRR_09_2024.csv"
-
-        # Load the data
-        data = pd.read_csv(file_path, delimiter=";", decimal=",")
+        # Load the data with correct separators and decimal indicators
+        data = pd.read_csv(file_path, sep=';', decimal=',')
+        
+        # Convert the "Datum" column to datetime
         data["Datum"] = pd.to_datetime(data["Datum"], format="%d.%m.%Y")
+        
+        # Extract month and year from the first date in the "Datum" column
+        if not data.empty:
+            first_date = data["Datum"].iloc[0]
+            month = first_date.month
+            year = first_date.year
+        else:
+            month = None
+            year = None
 
-        return data, month, year
+        metadata = {"month": month, "year": year, "rows": len(data)}
+        return data, metadata
     except Exception as e:
         print(f"Error loading data: {e}")
-        return None, None, None
+        return None, None
