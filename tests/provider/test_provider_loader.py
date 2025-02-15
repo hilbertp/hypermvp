@@ -7,18 +7,16 @@ class TestLoader(unittest.TestCase):
 
     def setUp(self):
         # Define the path to the test provider file
-        self.valid_xlsx = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "../tests/tests_data/raw/provider_list_2024_09_01_MOCK.xlsx")
-        )
+        self.valid_xlsx = "/home/philly/hypermvp/tests/tests_data/raw/provider_list_2024_09_01_MOCK.xlsx"
 
     def test_load_xlsx_file(self):
         # Print test header
         print("\n=== Provider File Loader Test ===")
-        print(f"Testing file: {os.path.relpath(self.valid_xlsx)}")
+        print(f"Testing file: {self.valid_xlsx}")
         
         # Check if the test file exists
         if not os.path.exists(self.valid_xlsx):
-            print(f"ERROR: Test file not found at {os.path.relpath(self.valid_xlsx)}")
+            print(f"ERROR: Test file not found at {self.valid_xlsx}")
             self.skipTest("Test file not found")
             return
 

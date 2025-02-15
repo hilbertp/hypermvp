@@ -1,7 +1,7 @@
 import os
 import pandas as pd
-from src.hypermvp.provider.loader import load_provider_file
-from src.hypermvp.provider.cleaner import clean_provider_data
+from hypermvp.provider.loader import load_provider_file
+from hypermvp.provider.cleaner import clean_provider_data
 
 
 def save_to_csv(df, output_dir, filename):
@@ -22,19 +22,21 @@ def save_to_csv(df, output_dir, filename):
 input_dir = "data/01_raw"
 output_dir = "data/02_processed"
 
+# Check if the input directory exists
+if not os.path.exists(input_dir):
+    raise FileNotFoundError(f"Input directory '{input_dir}' does not exist.")
+
 # Process each file in the input directory
 for filename in os.listdir(input_dir):
     if filename.endswith(".xlsx"):
         filepath = os.path.join(input_dir, filename)
-
+        
         # Load the raw data
         raw_data = load_provider_file(filepath)
-
+        
         # Clean the data
         cleaned_data = clean_provider_data(raw_data)
-
-        # Save the cleaned data to CSV
-        csv_filename = filename.replace(".xlsx", ".csv")
-        save_to_csv(cleaned_data, output_dir, csv_filename)
-
-print("Data dumping to CSV completed successfully.")
+        
+        # Save the cleaned data to a CSV file
+        output_filename = filename.replace(".xlsx", ".csv")
+        save_to_csv(cleaned_data, output_dir, output_filename)

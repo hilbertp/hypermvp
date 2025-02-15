@@ -1,6 +1,5 @@
 import pandas as pd
 
-
 def clean_provider_data(df):
     """
     Clean and transform provider offer data.
@@ -35,9 +34,6 @@ def clean_provider_data(df):
         df["DELIVERY_DATE"] = pd.to_datetime(df["DELIVERY_DATE"], format="%m/%d/%Y")
     except ValueError as e:
         raise ValueError(f"Error converting DELIVERY_DATE to datetime: {e}")
-
-    # Ensure ENERGY_PRICE_[EUR/MWh] column contains only string values
-    df["ENERGY_PRICE_[EUR/MWh]"] = df["ENERGY_PRICE_[EUR/MWh]"].astype(str)
 
     # Handle ENERGY_PRICE conversion
     df["ENERGY_PRICE_[EUR/MWh]"] = df["ENERGY_PRICE_[EUR/MWh]"].str.replace(",", ".").astype(float)

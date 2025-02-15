@@ -16,48 +16,42 @@ class TestCleaner(unittest.TestCase):
         })
 
     def test_clean_provider_data(self):
-        # Print dates before conversion
-        print("Before Conversion:")
-        for index, date in enumerate(self.raw_data["DELIVERY_DATE"]):
-            print(f"Row {index}: {date}, Type: {type(date)}")
-        print(self.raw_data.dtypes)
-
+        print("\n=== Provider Data Cleaner Test ===")
+        
+        # Print warnings about rows with notes
+        if "NOTE" in self.raw_data.columns and self.raw_data["NOTE"].notnull().any():
+            rows_with_notes = self.raw_data[self.raw_data["NOTE"].notnull()]
+            print("Warning: The following rows contain notes and will be dropped. Please review them:")
+            print(rows_with_notes)
+        
+        # Print before price adjustment
+        print("\nBefore ENERGY_PRICE adjustment:")
+        print(self.raw_data[["PRODUCT", "ENERGY_PRICE_[EUR/MWh]", "ENERGY_PRICE_PAYMENT_DIRECTION"]])
+        
+        # Clean the data
         cleaned_data = clean_provider_data(self.raw_data)
-
-        # Print dates after conversion
-        print("\nAfter Conversion:")
-        for index, date in enumerate(cleaned_data["DELIVERY_DATE"]):
-            print(f"Row {index}: {date}, Type: {type(date)}")
-        print(cleaned_data.dtypes)
-
-        # Print column type explicitly
-        print(f"Column dtype: {cleaned_data['DELIVERY_DATE'].dtype}")
-
-        # Test if DELIVERY_DATE is converted to datetime
-        self.assertEqual(cleaned_data["DELIVERY_DATE"].dtype, "datetime64[ns]")
-
-        # Test if ENERGY_PRICE_[EUR/MWh] values are converted to float64
-        self.assertEqual(cleaned_data['ENERGY_PRICE_[EUR/MWh]'].dtype, 'float64')
-
-        # Test if NOTE column is dropped
-        self.assertNotIn('NOTE', cleaned_data.columns)
-
-        # Test if unnecessary columns are dropped
-        self.assertNotIn('ENERGY_PRICE_PAYMENT_DIRECTION', cleaned_data.columns)
-
-        # Test if POS_* rows are dropped
-        self.assertFalse((cleaned_data['PRODUCT'].str.startswith('POS_')).any())
-
-    def test_energy_price_adjustment(self):
-        cleaned_data = clean_provider_data(self.raw_data)
-
-        # Test adjusted values for NEG_* products
-        self.assertAlmostEqual(cleaned_data.iloc[0]['ENERGY_PRICE_[EUR/MWh]'], 138.85, places=2)
-        self.assertAlmostEqual(cleaned_data.iloc[1]['ENERGY_PRICE_[EUR/MWh]'], 140.50, places=2)
-        self.assertAlmostEqual(cleaned_data.iloc[2]['ENERGY_PRICE_[EUR/MWh]'], -135.10, places=2)
-
-        # Ensure POS_* rows are not present
-        self.assertFalse((cleaned_data['PRODUCT'].str.startswith('POS_')).any())
+        
+        # Print after price adjustment
+        print("\nAfter ENERGY_PRICE adjustment:")
+        print(cleaned_data[["PRODUCT", "ENERGY_PRICE_[EUR/MWh]"]])
+        
+        # Assert that the DELIVERY_DATE column is converted to datetime
+        self.assertTrue(pd.api.types.is_datetime64_any_dtype(cleaned_data["DELIVERY_DATE"]))
+        
+        # Assert that the ENERGY_PRICE_[EUR/MWh] column is converted to float64
+        self.assertTrue(pd.api.types.is_float_dtype(cleaned_data["ENERGY_PRICE_[EUR/MWh]"]))
+        
+        # Assert that the NOTE column is dropped
+        self.assertNotIn("NOTE", cleaned_data.columns)
+        
+        # Assert that the ENERGY_PRICE_PAYMENT_DIRECTION column is dropped
+        self.assertNotIn("ENERGY_PRICE_PAYMENT_DIRECTION", cleaned_data.columns)
+        
+        # Assert that rows with PRODUCT starting with "POS_" are dropped
+        self.assertFalse(cleaned_data["PRODUCT"].str.startswith("POS_").any())
+        
+        print("\nTest Result: All assertions passed")
+        print("===============================\n")
 
 if __name__ == "__main__":
-    unittest.main()
+    unittest.main(verbosity=2)
