@@ -1,16 +1,11 @@
 import pandas as pd
+import re
 
+def clean_column_name(col):
+    """Replace all non-alphanumeric characters (except underscores) with an underscore."""
+    return re.sub(r'\W+', '_', col)
 
 def clean_provider_data(df):
-    """
-    Clean and transform provider offer data.
-
-    Args:
-        df (pd.DataFrame): Raw provider data.
-
-    Returns:
-        pd.DataFrame: Cleaned provider data.
-    """
     # Validate required columns
     required_columns = [
         "DELIVERY_DATE",
@@ -50,5 +45,8 @@ def clean_provider_data(df):
 
     # Sort the DataFrame
     df.sort_values(by=["DELIVERY_DATE", "PRODUCT", "ENERGY_PRICE_[EUR/MWh]"], inplace=True)
+
+    # Clean column names
+    df.columns = [clean_column_name(col) for col in df.columns]
 
     return df

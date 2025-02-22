@@ -7,7 +7,7 @@ class TestLoader(unittest.TestCase):
 
     def setUp(self):
         # Define the path to the test provider file
-        self.valid_xlsx = "/home/philly/hypermvp/tests/tests_data/raw/provider_list_2024_09_01_MOCK.xlsx"
+        self.valid_xlsx = "/home/philly/hypermvp/tests/tests_data/raw/test_provider_list.xlsx"
 
     def test_load_xlsx_file(self):
         # Print test header

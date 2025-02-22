@@ -21,7 +21,7 @@ class TestCleaner(unittest.TestCase):
         # Print warnings about rows with notes
         if "NOTE" in self.raw_data.columns and self.raw_data["NOTE"].notnull().any():
             rows_with_notes = self.raw_data[self.raw_data["NOTE"].notnull()]
-            print("Warning: The following rows contain notes and will be dropped. Please review them:")
+            print("Warning: The following rows contain notes, which will be dropped from the dataset. Please review them:")
             print(rows_with_notes)
         
         # Print before price adjustment
@@ -33,13 +33,13 @@ class TestCleaner(unittest.TestCase):
         
         # Print after price adjustment
         print("\nAfter ENERGY_PRICE adjustment:")
-        print(cleaned_data[["PRODUCT", "ENERGY_PRICE_[EUR/MWh]"]])
+        print(cleaned_data[["PRODUCT", "ENERGY_PRICE__EUR_MWh_"]])
         
         # Assert that the DELIVERY_DATE column is converted to datetime
         self.assertTrue(pd.api.types.is_datetime64_any_dtype(cleaned_data["DELIVERY_DATE"]))
         
-        # Assert that the ENERGY_PRICE_[EUR/MWh] column is converted to float64
-        self.assertTrue(pd.api.types.is_float_dtype(cleaned_data["ENERGY_PRICE_[EUR/MWh]"]))
+        # Assert that the ENERGY_PRICE column is converted to float64
+        self.assertTrue(pd.api.types.is_float_dtype(cleaned_data["ENERGY_PRICE__EUR_MWh_"]))
         
         # Assert that the NOTE column is dropped
         self.assertNotIn("NOTE", cleaned_data.columns)

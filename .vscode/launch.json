@@ -7,10 +7,10 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
             "env": {
                 "PYTHONPATH": "${workspaceFolder}"
-            },
-            "python": "/home/philly/.cache/pypoetry/virtualenvs/hypermvp-sO1agIO--py3.12/bin/python"
+            }
         }
     ]
 }

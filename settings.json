@@ -1,0 +1,4 @@
+{
+    "python.testing.cwd": "/home/philly/hypermvp",
+    "python.envFile": "${workspaceFolder}/.env"
+}

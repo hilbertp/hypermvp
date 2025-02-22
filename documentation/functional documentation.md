@@ -11,25 +11,55 @@
 2. **Negative vs. Positive aFRR:**
 
    - **Negative aFRR:**
-
-     - Negative aFRR (Automatic Frequency Restoration Reserve) is a balancing service used by the Transmission System Operator (TSO) to reduce energy on the grid when there is an oversupply. This service ensures that the grid frequency remains stable at 50 Hz by addressing surplus energy.
+     - Negative aFRR (Automatic Frequency Restoration Reserve) is a balancing service used by the TSO to reduce energy on the grid when there is an oversupply.
      - Mechanisms:
-       1. Providers reduce their energy generation into the grid (e. g. turning down power plants or renewable energy sources).
-       2. Alternatively, providers increase consumption by taking energy from the grid to utilize it effectively.
+       1. Energy providers reduce their energy generation into the grid, or
+       2. Consumers increase consumption to utilize excess energy.
      - Activation Priority:
-       - Providers offering negative aFRR services are ranked based on their bid prices.
-       - The TSO activates the least expensive bids first (including those with negative prices, where providers pay the grid) until the required balancing volume is achieved.
-       - This follows the **merit-order principle** to ensure cost efficiency.
+       - Providers offering negative aFRR services are ranked by bid prices.
+       - The TSO activates the lowest-priced bids first (including those with negative prices, where providers effectively pay to be activated) until the required balancing volume is met.
+       - This follows the **merit-order principle** for cost efficiency.
      - Why Negative Prices?:
-       - Providers may be willing to pay the grid to reduce their energy generation or consume excess energy to save operational costs (e.g., avoiding fuel expenses) or allow for beneficial energy usage.
+       - Some providers are more eager to be called a lot and may even be willing to pay the grid operator to be called before others that want to be paid by the grid. The reason why can be explained by Philipp but are too complex to be explained in written form here.
 
    - **Positive aFRR:**
-
-     - Balancing energy is injected into the system (TSO increases generation or reduces consumption).
+- Represents the injection of balancing energy into the system (the TSO increases generation or reduces consumption).
 
 3. **Payment Direction and Merit Order Principle:**
 
-   - At the start of each 15-minute control window, the TSO engages providers based on the merit-order principle to stabilize the grid at 50 Hz during times of surplus energy. Providers with negative prices (PROVIDER\_TO\_GRID) are called first, as they are willing to pay to be activated. Once these are exhausted, the grid activates providers with zero prices, followed by those with positive prices (GRID\_TO\_PROVIDER). This sequence continues until the energy control demand for the period is fully met.
+   - At the start of each 15-minute control window, the TSO stabilizes the grid by engaging providers in a sequence that honors the merit-order principle.
+   - Providers with negative prices (Payment Direction PROVIDER_TO_GRID) are called first, followed by providers with zero and then positive prices (Payment Direction GRID_TO_PROVIDER), until the control demand is fully met.
+
+#### Workflow Overview:
+
+**Provider Workflow (Revised):**
+
+- **Data Collection:**  
+  Raw XLSX files containing provider bid data are received in a dedicated input folder.
+
+- **Data Preparation:**  
+  The system loads and cleans these raw files and groups the data into 4‑hour periods based on the DELIVERY_DATE.
+  
+- **4‑Hour Interval Update Process:**  
+  For each 4‑hour period (e.g., 00:00–04:00, 04:00–08:00, etc.), the system deletes any previously stored data for that period from the database and then inserts the complete new dataset. This ensures that duplicate imports do not occur while still allowing all valid bid entries—including identical ones—to be maintained.
+
+- **Outcome:**  
+  Provider bid data is kept current on a 4‑hour interval basis. Corrections or re-imports will entirely replace the older data for a given 4‑hour period.
+
+**AFRR Workflow (Revised):**
+
+- **Data Collection:**  
+  Raw CSV files containing AFRR data are received from the designated source.
+
+- **Data Preparation:**  
+  The system loads and cleans the AFRR data in memory.
+
+- **15-Minute Interval Update Process:**  
+  Every 15-minute period requires a specific adjustment value – a delta between the planned energy and the actual measured energy. This delta, which is always negative for our purposes (we are only analysing negativ AFRR in this project), is used to keep the grid stable. 
+  When a value is imported that already exists the script updates the database by overwriting the existing delta for that interval. This ensures that each interval always holds the most current adjustment value while allowing past values to be corrected if necessary.
+
+- **Outcome:**  
+  AFRR data is maintained accurately on a 15-minute interval basis, with one current adjustment value (delta) per interval.
 
 #### Algorithm for Marginal Price Calculation:
 
@@ -38,19 +68,20 @@
    - Two datasets are processed:
      - Activated power (negative aFRR) in 15-minute intervals.
      - Provider offers for varying quantities and prices of aFRR.
-   - Time columns are converted into appropriate formats, and irrelevant positive aFRR data is removed.
+   - Time columns are formatted appropriately, and any irrelevant positive aFRR data is removed.
 
 2. **Merit-Order Principle:**
 
    - Offers are sorted by price, accounting for payment direction:
-     - PROVIDER\_TO\_GRID prices are adjusted to negative values (e.g., “x EUR/MWh” becomes “-x EUR/MWh”).
-     - GRID\_TO\_PROVIDER prices remain positive.
+     - PROVIDER_TO_GRID prices are adjusted to negative values.
+     - GRID_TO_PROVIDER prices remain positive.
 
 3. **Marginal Price Determination for an Interval:**
 
-   - Identify the negative balancing energy demand (e.g., 80.528 MW at 16:00 – 16:15 for 50Hertz).
-   - Match offers to the interval using the product code (e.g., `NEG_065`).
-   - Filter and sort offers by adjusted price.
+   - The system identifies the negative balancing energy demand for the interval.
+   - Bids are matched based on their product code.
+   - Sorted bids are accumulated until the energy control demand is met.
+   - The price of the final (most expensive) activated bid defines the marginal price.
 
 4. **Iterative Summation to Determine Marginal Price:**
 
