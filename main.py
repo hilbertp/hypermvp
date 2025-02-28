@@ -11,6 +11,7 @@ This script:
 import argparse
 import logging
 import os
+import time
 from datetime import datetime
 import pandas as pd
 
@@ -31,11 +32,13 @@ logging.basicConfig(
 )
 
 def process_provider_workflow():
-    """End-to-end workflow for processing provider data."""
+    """End-to-end workflow for processing provider data with timing logs."""
     try:
         logging.info("=== STARTING PROVIDER WORKFLOW ===")
-        
-        # 1. LOAD PHASE: Load all XLSX files from RAW_DATA_DIR
+        start = time.time()
+
+        # LOAD PHASE
+        load_start = time.time()
         provider_dfs = []
         logging.info("Loading provider files from %s", RAW_DATA_DIR)
         for filename in os.listdir(RAW_DATA_DIR):
@@ -48,26 +51,32 @@ def process_provider_workflow():
             logging.error("No provider files found in %s", RAW_DATA_DIR)
             return
         raw_data = pd.concat(provider_dfs, ignore_index=True)
-        logging.info("Loaded %d total records", len(raw_data))
-        
-        # 2. CLEAN PHASE: Clean the raw data
+        logging.info("Loaded %d records in %.2f seconds",
+                     len(raw_data), time.time() - load_start)
+
+        # CLEAN PHASE
+        clean_start = time.time()
         cleaned_data = clean_provider_data(raw_data)
-        logging.info("Cleaned data contains %d records", len(cleaned_data))
-        
-        # 3. CSV DUMP PHASE: Dump the cleaned data into a CSV file
+        logging.info("Cleaned data contains %d records in %.2f seconds",
+                     len(cleaned_data), time.time() - clean_start)
+
+        # CSV DUMP PHASE
+        csv_start = time.time()
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         csv_filename = f"provider_cleaned_{timestamp}.csv"
         csv_path = os.path.join(PROCESSED_DATA_DIR, csv_filename)
         save_to_csv(cleaned_data, PROCESSED_DATA_DIR, csv_filename)
-        logging.info("Cleaned CSV dumped to %s", csv_path)
-        
-        # 4. DATABASE UPDATE PHASE:
-        # Here we use update_provider_data which loads & cleans the files again.
-        # You can also rework update_provider_data to accept a DataFrame.
+        logging.info("CSV dumped to %s in %.2f seconds",
+                     csv_path, time.time() - csv_start)
+
+        # DATABASE UPDATE PHASE
+        db_start = time.time()
         db_path = os.path.join(PROCESSED_DATA_DIR, "provider_data.duckdb")
         update_provider_data(RAW_DATA_DIR, db_path, "provider_data")
-        logging.info("Database update complete at %s", db_path)
-        
+        logging.info("Database update complete at %s in %.2f seconds",
+                     db_path, time.time() - db_start)
+
+        logging.info("Total workflow took %.2f seconds", time.time() - start)
         logging.info("=== PROVIDER WORKFLOW COMPLETE ===")
     except Exception as e:
         logging.error("Workflow failed: %s", e)

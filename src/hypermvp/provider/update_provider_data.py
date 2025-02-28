@@ -1,6 +1,8 @@
 import os
-import duckdb
+import logging
 import pandas as pd
+from config import RAW_DATA_DIR, PROCESSED_DATA_DIR  # If you need these constants
+import duckdb
 from hypermvp.provider.loader import load_provider_file
 from hypermvp.provider.cleaner import clean_provider_data
 
@@ -49,7 +51,6 @@ def update_provider_data(input_dir, db_path, table_name="provider_data"):
     combined_new["period"] = combined_new["DELIVERY_DATE"].dt.floor("4h")
     
     # Group data by the period key.
-    new_period_data = []
     for period, group in combined_new.groupby("period"):
         print(f"Processing period {period}...")
         # Delete existing records for this period from the provider table.
@@ -58,35 +59,12 @@ def update_provider_data(input_dir, db_path, table_name="provider_data"):
         except Exception:
             # If the table does not exist yet, it will be created below.
             pass
-        new_period_data.append(group)
+        # Insert new rows; using a bulk insertion method would be more efficient:
+        con.register("temp_df", group)
+        con.execute(f"INSERT INTO {table_name} SELECT * FROM temp_df")
+        con.unregister("temp_df")
     
-    if new_period_data:
-        new_data_df = pd.concat(new_period_data, ignore_index=True)
-        
-        # Ensure all columns are strings to avoid type inference issues
-        for col in new_data_df.columns:
-            new_data_df[col] = new_data_df[col].astype(str)
-        
-        # If the table does not exist, create it using CREATE TABLE AS SELECT
-        existing_tables = con.execute("SHOW TABLES").fetchall()
-        table_names = {row[0].lower() for row in existing_tables}
-        
-        if table_name.lower() not in table_names:
-            con.register('temp_df', new_data_df)
-            con.execute(f"CREATE TABLE {table_name} AS SELECT * FROM temp_df")
-            con.unregister('temp_df')
-        else:
-            # Insert data row by row
-            for _, row in new_data_df.iterrows():
-                placeholders = ', '.join(['?'] * len(row))
-                insert_statement = f"INSERT INTO {table_name} VALUES ({placeholders})"
-                con.execute(insert_statement, row.tolist())
-            
-        con.commit()
-        print(f"Processed and updated provider data for periods: {list(combined_new['period'].unique())}")
-        con.close()
-        return new_data_df
-    
-    print("No new period data to update after grouping.")
+    con.commit()
+    print(f"Processed and updated provider data for periods: {list(combined_new['period'].unique())}")
     con.close()
-    return pd.DataFrame()
+    return combined_new

@@ -1,9 +1,10 @@
 import os
 import duckdb
 import pandas as pd
+import unittest
 from hypermvp.provider.update_provider_data import update_provider_data
 
-class TestUpdateProviderData:
+class TestUpdateProviderData(unittest.TestCase):
     def setUp(self):
         self.input_dir = 'data/test_raw'
         self.db_path = 'data/test_processed_data.duckdb'
@@ -15,8 +16,8 @@ class TestUpdateProviderData:
         sample_data = {
             'DELIVERY_DATE': ['1/1/2025', '2/1/2025'],
             'PRODUCT': ['NEG_001', 'NEG_002'],
-            'ENERGY_PRICE_[EUR/MWh]': [100.00, 200.00],  # Original name
-            'ALLOCATED_CAPACITY_[MW]': [5, 10],           # Original name
+            'ENERGY_PRICE_[EUR/MWh]': [100.00, 200.00],
+            'ALLOCATED_CAPACITY_[MW]': [5, 10],
             'ENERGY_PRICE_PAYMENT_DIRECTION': ['GRID_TO_PROVIDER', 'PROVIDER_TO_GRID'],
             'NOTE': ['', '']
         }
@@ -37,9 +38,9 @@ class TestUpdateProviderData:
         expected_columns = [
             'DELIVERY_DATE',
             'PRODUCT',
-            'ENERGY_PRICE__EUR_MWh_',  # Cleaned name
-            'ALLOCATED_CAPACITY__MW_',  # Cleaned name
-            'period'                    # Added during processing
+            'ENERGY_PRICE__EUR_MWh_',
+            'ALLOCATED_CAPACITY__MW_',
+            'period'
         ]
         
         # Optional: Add print statements for debugging
