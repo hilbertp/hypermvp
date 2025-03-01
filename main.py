@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 """
-Main processing workflow for provider data.
+Main processing workflow for energy data.
 This script:
-  1. Loads all provider list XLSX files from RAW_DATA_DIR.
-  2. Cleans the data.
-  3. Dumps the cleaned CSV to PROCESSED_DATA_DIR.
-  4. Updates the provider data in the DuckDB database.
+  1. Provider workflow: Loads XLSX files, cleans data, updates DuckDB directly.
+  2. AFRR workflow: Loads CSV files, cleans data, saves directly to DuckDB.
 """
 
 import argparse
@@ -14,15 +12,20 @@ import os
 import time
 from datetime import datetime
 import pandas as pd
+import re
 
 # Import configuration
-from config import DATA_DIR, RAW_DATA_DIR, PROCESSED_DATA_DIR, OUTPUT_DATA_DIR
+from config import DATA_DIR, RAW_DATA_DIR, PROCESSED_DATA_DIR, OUTPUT_DATA_DIR, AFRR_FILE_PATH
 
-# Import functions from our modules
+# Import provider modules
 from hypermvp.provider.loader import load_provider_file
 from hypermvp.provider.cleaner import clean_provider_data
-from hypermvp.provider.dump_csv import save_to_csv
 from hypermvp.provider.update_provider_data import update_provider_data
+
+# Import AFRR modules
+from hypermvp.afrr.loader import load_afrr_data
+from hypermvp.afrr.cleaner import filter_negative_50hertz
+from hypermvp.afrr.save_to_duckdb import save_afrr_to_duckdb
 
 # Configure logging
 logging.basicConfig(
@@ -60,15 +63,6 @@ def process_provider_workflow():
         logging.info("Cleaned data contains %d records in %.2f seconds",
                      len(cleaned_data), time.time() - clean_start)
 
-        # CSV DUMP PHASE
-        csv_start = time.time()
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        csv_filename = f"provider_cleaned_{timestamp}.csv"
-        csv_path = os.path.join(PROCESSED_DATA_DIR, csv_filename)
-        save_to_csv(cleaned_data, PROCESSED_DATA_DIR, csv_filename)
-        logging.info("CSV dumped to %s in %.2f seconds",
-                     csv_path, time.time() - csv_start)
-
         # DATABASE UPDATE PHASE
         db_start = time.time()
         db_path = os.path.join(PROCESSED_DATA_DIR, "provider_data.duckdb")
@@ -83,9 +77,33 @@ def process_provider_workflow():
         raise
 
 def process_afrr_workflow():
-    """Placeholder for AFRR processing workflow."""
-    logging.warning("AFRR workflow not yet implemented")
-    # Add your AFRR processing logic here
+    """End-to-end workflow for processing AFRR data with timing logs."""
+    try:
+        logging.info("=== STARTING AFRR WORKFLOW ===")
+        start = time.time()
+
+        # LOAD PHASE
+        load_start = time.time()
+        logging.info("Loading AFRR data from %s", AFRR_FILE_PATH)
+        afrr_data = load_afrr_data(AFRR_FILE_PATH)
+        logging.info("Loaded AFRR data in %.2f seconds", time.time() - load_start)
+
+        # CLEAN PHASE
+        clean_start = time.time()
+        cleaned_afrr_data = filter_negative_50hertz(afrr_data)
+        logging.info("Cleaned AFRR data in %.2f seconds", time.time() - clean_start)
+
+        # SAVE TO DUCKDB PHASE
+        db_start = time.time()
+        db_path = os.path.join(PROCESSED_DATA_DIR, "afrr_data.duckdb")
+        save_afrr_to_duckdb(cleaned_afrr_data, db_path)
+        logging.info("AFRR data saved to DuckDB at %s in %.2f seconds", db_path, time.time() - db_start)
+
+        logging.info("Total workflow took %.2f seconds", time.time() - start)
+        logging.info("=== AFRR WORKFLOW COMPLETE ===")
+    except Exception as e:
+        logging.error("Workflow failed: %s", e)
+        raise
 
 def main():
     # Setup command-line argument parsing

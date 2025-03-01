@@ -1,46 +1,89 @@
 import os
+import time
+import logging
 import pandas as pd
 import duckdb
 from hypermvp.config import PROCESSED_DATA_DIR, DUCKDB_PATH
 
-
-def save_afrr_to_duckdb(cleaned_afrr_data, month, year, table_name="afrr_data"):
+def save_afrr_to_duckdb(cleaned_afrr_data, month, year, table_name="afrr_data", db_path=None):
     """
     Save cleaned aFRR data to a DuckDB database, appending month and year metadata.
+    Handles deduplication by removing any existing data for the same month/year.
 
     Args:
         cleaned_afrr_data (pd.DataFrame): Cleaned aFRR data.
         month (int): Month of the data (e.g., 9 for September).
         year (int): Year of the data (e.g., 2024).
         table_name (str): Name of the table in the DuckDB database.
+        db_path (str, optional): Path to DuckDB database file. Defaults to DUCKDB_PATH from config.
+    
+    Returns:
+        int: Number of rows inserted into the database.
     """
+    start_time = time.time()
+    
+    if db_path is None:
+        db_path = DUCKDB_PATH
+    
     try:
         # Ensure the processed data directory exists
-        os.makedirs(PROCESSED_DATA_DIR, exist_ok=True)
+        os.makedirs(os.path.dirname(db_path), exist_ok=True)
 
         # Add month and year columns to the data
-        cleaned_afrr_data["month"] = month
-        cleaned_afrr_data["year"] = year
+        data = cleaned_afrr_data.copy()
+        data["month"] = month
+        data["year"] = year
 
         # Connect to the DuckDB database
-        conn = duckdb.connect(DUCKDB_PATH)
+        conn = duckdb.connect(db_path)
 
-        # Create the table if it doesn't exist
-        conn.execute(
-            f"CREATE TABLE IF NOT EXISTS {table_name} AS SELECT * FROM cleaned_afrr_data LIMIT 0;"
+        # Check if the table exists
+        table_exists = conn.execute(
+            f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}'"
+        ).fetchone() is not None
+
+        if not table_exists:
+            # Create the table if it doesn't exist
+            logging.info(f"Creating new table '{table_name}' in DuckDB")
+            conn.register("temp_df", data)
+            conn.execute(
+                f"CREATE TABLE {table_name} AS SELECT * FROM temp_df WHERE 1=0"
+            )
+            conn.unregister("temp_df")
+        
+        # Delete any existing data for this month and year
+        delete_start = time.time()
+        deleted_rows = conn.execute(
+            f"DELETE FROM {table_name} WHERE month = {month} AND year = {year}"
+        ).fetchone()[0]
+        
+        if deleted_rows > 0:
+            logging.info(f"Removed {deleted_rows} existing rows for {month}/{year} from '{table_name}' in {time.time() - delete_start:.2f} seconds")
+        
+        # Insert new data
+        insert_start = time.time()
+        conn.register("temp_df", data)
+        conn.execute(f"INSERT INTO {table_name} SELECT * FROM temp_df")
+        row_count = len(data)
+        conn.unregister("temp_df")
+        
+        # Commit changes and close
+        conn.commit()
+        
+        logging.info(
+            f"Inserted {row_count} rows of aFRR data for {month}/{year} into '{table_name}' in {time.time() - insert_start:.2f} seconds"
         )
-
-        # Insert data into the table
-        conn.execute(f"INSERT INTO {table_name} SELECT * FROM cleaned_afrr_data;")
-
-        print(
-            f"aFRR data for {month}/{year} successfully saved to table '{table_name}' in DuckDB."
-        )
+        logging.info(f"Total save operation took {time.time() - start_time:.2f} seconds")
+        
+        return row_count
+        
     except Exception as e:
-        print(f"Error saving aFRR data to DuckDB: {e}")
+        logging.error(f"Error saving aFRR data to DuckDB: {e}")
+        return 0
     finally:
         # Close the DuckDB connection
-        conn.close()
+        if 'conn' in locals():
+            conn.close()
 
 
 # Example usage:
