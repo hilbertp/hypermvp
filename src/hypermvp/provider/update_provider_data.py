@@ -1,7 +1,7 @@
 import os
 import logging
 import pandas as pd
-from config import RAW_DATA_DIR, PROCESSED_DATA_DIR  # If you need these constants
+from hypermvp.config import RAW_DATA_DIR, PROCESSED_DATA_DIR  # If you need these constants
 import duckdb
 from hypermvp.provider.loader import load_provider_file
 from hypermvp.provider.cleaner import clean_provider_data

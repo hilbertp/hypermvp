@@ -15,7 +15,7 @@ import pandas as pd
 import re
 
 # Import configuration
-from config import DATA_DIR, RAW_DATA_DIR, PROCESSED_DATA_DIR, OUTPUT_DATA_DIR, AFRR_FILE_PATH
+from hypermvp.config import DATA_DIR, RAW_DATA_DIR, PROCESSED_DATA_DIR, OUTPUT_DATA_DIR, AFRR_FILE_PATH
 
 # Import provider modules
 from hypermvp.provider.loader import load_provider_file
@@ -77,7 +77,6 @@ def process_provider_workflow():
         raise
 
 def process_afrr_workflow():
-    """End-to-end workflow for processing AFRR data with timing logs."""
     try:
         logging.info("=== STARTING AFRR WORKFLOW ===")
         start = time.time()
@@ -85,7 +84,13 @@ def process_afrr_workflow():
         # LOAD PHASE
         load_start = time.time()
         logging.info("Loading AFRR data from %s", AFRR_FILE_PATH)
+        # Get the DataFrame directly
         afrr_data = load_afrr_data(AFRR_FILE_PATH)
+        # Add debug prints
+        print(f"Type of afrr_data: {type(afrr_data)}")
+        if isinstance(afrr_data, tuple):
+            print(f"Tuple contents: {len(afrr_data)} items")
+            afrr_data = afrr_data[0]  # Extract just the DataFrame
         logging.info("Loaded AFRR data in %.2f seconds", time.time() - load_start)
 
         # CLEAN PHASE
@@ -95,8 +100,9 @@ def process_afrr_workflow():
 
         # SAVE TO DUCKDB PHASE
         db_start = time.time()
-        db_path = os.path.join(PROCESSED_DATA_DIR, "afrr_data.duckdb")
-        save_afrr_to_duckdb(cleaned_afrr_data, db_path)
+        db_path = os.path.join(DUCKDB_DIR, "afrr_data.duckdb")  # Use DUCKDB_DIR from config
+        os.makedirs(os.path.dirname(db_path), exist_ok=True)  # Ensure directory exists
+        save_afrr_to_duckdb(cleaned_afrr_data, 9, 2024, "afrr_data", db_path)
         logging.info("AFRR data saved to DuckDB at %s in %.2f seconds", db_path, time.time() - db_start)
 
         logging.info("Total workflow took %.2f seconds", time.time() - start)

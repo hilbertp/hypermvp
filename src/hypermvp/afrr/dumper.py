@@ -1,6 +1,6 @@
 import os
 from datetime import datetime
-import config
+from hypermvp import config
 
 def dump_afrr_data(cleaned_afrr_data, identifier="afrr"):
     """

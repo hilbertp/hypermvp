@@ -3,7 +3,7 @@ import unittest
 import pandas as pd
 from unittest.mock import patch
 from hypermvp.afrr.dumper import dump_afrr_data
-from config import PROCESSED_TEST_DIR, OUTPUT_TEST_DIR  # use test directories from config
+from hypermvp.config import PROCESSED_TEST_DIR, OUTPUT_TEST_DIR  # use test directories from config
 
 class TestAfrrDumper(unittest.TestCase):
 
@@ -35,7 +35,7 @@ class TestAfrrDumper(unittest.TestCase):
         test_identifier = "test_afrr"
         
         # Act: Dump the data to the test output folder by patching OUTPUT_DATA_DIR in dumper.py.
-        with patch('config.OUTPUT_DATA_DIR', self.base_output_dir):
+        with patch('hypermvp.config.OUTPUT_DATA_DIR', self.base_output_dir):
             dump_afrr_data(self.sample_data.copy(), test_identifier)
 
         # Assert: Check that at least one file is created in the test output folder.

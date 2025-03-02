@@ -88,4 +88,4 @@ def save_afrr_to_duckdb(cleaned_afrr_data, month, year, table_name="afrr_data", 
 
 # Example usage:
 # Assume `cleaned_afrr` is a pandas DataFrame containing the cleaned aFRR data.
-# save_afrr_to_duckdb(cleaned_afrr, month=9, year=2024)
+save_afrr_to_duckdb(cleaned_afrr_data, 9, 2024, "afrr_data", db_path)
