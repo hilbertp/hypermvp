@@ -7,8 +7,7 @@ from hypermvp.config import PROCESSED_DATA_DIR, DUCKDB_PATH
 
 def save_afrr_to_duckdb(cleaned_afrr_data, month, year, table_name="afrr_data", db_path=None):
     """
-    Save cleaned aFRR data to a DuckDB database, appending month and year metadata.
-    Handles deduplication by removing any existing data for the same month/year.
+    Save cleaned aFRR data to a DuckDB database, appending month and year metadata. Handles deduplication by removing any existing data for the same month/year.
 
     Args:
         cleaned_afrr_data (pd.DataFrame): Cleaned aFRR data.
@@ -85,7 +84,13 @@ def save_afrr_to_duckdb(cleaned_afrr_data, month, year, table_name="afrr_data", 
         if 'conn' in locals():
             conn.close()
 
-
-# Example usage:
-# Assume `cleaned_afrr` is a pandas DataFrame containing the cleaned aFRR data.
-save_afrr_to_duckdb(cleaned_afrr_data, 9, 2024, "afrr_data", db_path)
+if __name__ == "__main__":
+    # Example usage - only run when the script is executed directly
+    test_data = pd.DataFrame({
+        'Datum': pd.to_datetime(['2024-09-01', '2024-09-01']),
+        'von': ['00:00', '00:15'],
+        'bis': ['00:15', '00:30'],
+        '50Hertz (Negativ)': [4.364, 10.052]
+    })
+    example_db_path = os.path.join(PROCESSED_DATA_DIR, "example_afrr.duckdb")
+    save_afrr_to_duckdb(test_data, 9, 2024, "afrr_example", example_db_path)

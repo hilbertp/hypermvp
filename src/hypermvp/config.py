@@ -10,8 +10,8 @@ RAW_DATA_DIR = os.path.join(DATA_DIR, "01_raw")
 PROCESSED_DATA_DIR = os.path.join(DATA_DIR, "02_processed")
 OUTPUT_DATA_DIR = os.path.join(DATA_DIR, "03_output")
 
-# DuckDB paths (moved to OUTPUT_DATA_DIR with clear naming)
-DUCKDB_DIR = os.path.join(OUTPUT_DATA_DIR, 'duckdb')
+# DuckDB paths (moved to PROCESSED_DATA_DIR with clear naming)
+DUCKDB_DIR = os.path.join(PROCESSED_DATA_DIR, 'duckdb')  # Now points to 02_processed/duckdb
 PROVIDER_DUCKDB_PATH = os.path.join(DUCKDB_DIR, "provider_data.duckdb")
 AFRR_DUCKDB_PATH = os.path.join(DUCKDB_DIR, "afrr_data.duckdb")
 

@@ -9,7 +9,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/cache@v3
+        with:
+          path: ~/.cache/uv
+          key: ${{ runner.os }}-uv-${{ hashFiles('pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-
       - uses: astral-sh/setup-uv@v5.1.0
         with:
-          python-version: 3.13
+          python-version: 3.12
+      - run: uv pip install -e .
       - run: uv run pytest

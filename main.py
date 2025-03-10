@@ -15,7 +15,21 @@ import pandas as pd
 import re
 
 # Import configuration
-from hypermvp.config import DATA_DIR, RAW_DATA_DIR, PROCESSED_DATA_DIR, OUTPUT_DATA_DIR, AFRR_FILE_PATH
+from hypermvp.config import (
+    DATA_DIR, RAW_DATA_DIR, PROCESSED_DATA_DIR, 
+    OUTPUT_DATA_DIR, AFRR_FILE_PATH, DUCKDB_DIR,  # Add DUCKDB_DIR here
+    AFRR_DUCKDB_PATH  # Add this for a cleaner approach
+)
+
+import sys
+print(f"Config variables loaded: {dir(sys.modules['hypermvp.config'])}")
+
+# Add after imports
+from hypermvp import config
+print("Available config variables:")
+for item in dir(config):
+    if not item.startswith("__"):
+        print(f"- {item}")
 
 # Import provider modules
 from hypermvp.provider.loader import load_provider_file
@@ -100,8 +114,8 @@ def process_afrr_workflow():
 
         # SAVE TO DUCKDB PHASE
         db_start = time.time()
-        db_path = os.path.join(DUCKDB_DIR, "afrr_data.duckdb")  # Use DUCKDB_DIR from config
-        os.makedirs(os.path.dirname(db_path), exist_ok=True)  # Ensure directory exists
+        db_path = AFRR_DUCKDB_PATH
+        os.makedirs(os.path.dirname(AFRR_DUCKDB_PATH), exist_ok=True)
         save_afrr_to_duckdb(cleaned_afrr_data, 9, 2024, "afrr_data", db_path)
         logging.info("AFRR data saved to DuckDB at %s in %.2f seconds", db_path, time.time() - db_start)
 
