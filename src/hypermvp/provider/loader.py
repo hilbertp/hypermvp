@@ -1,11 +1,31 @@
+import os
 import pandas as pd
+import logging
 
 
 def load_provider_file(filepath):
-    """Load a provider file assuming it's always an XLSX file."""
+    """Load a provider file (XLSX) and return a DataFrame."""
+    logging.debug("Loading file (from loader): %s", filepath)
     if not filepath.endswith(".xlsx"):
         raise ValueError(f"Unsupported file format: {filepath}")
     return pd.read_excel(filepath)
+
+
+def load_provider_data(raw_dir):
+    """
+    Load all XLSX provider files from a given directory and return a combined DataFrame.
+    """
+    provider_dfs = []
+    logging.info("Loading provider files from %s", raw_dir)
+    for filename in os.listdir(raw_dir):
+        if filename.endswith(".xlsx"):
+            filepath = os.path.join(raw_dir, filename)
+            logging.info("Loading file: %s", filepath)
+            df = load_provider_file(filepath)
+            provider_dfs.append(df)
+    if not provider_dfs:
+        raise ValueError(f"No provider files found in {raw_dir}")
+    return pd.concat(provider_dfs, ignore_index=True)
 
 
 def load_afrr_data(file_path):

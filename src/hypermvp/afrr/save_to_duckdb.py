@@ -3,7 +3,8 @@ import time
 import logging
 import pandas as pd
 import duckdb
-from hypermvp.config import PROCESSED_DATA_DIR, DUCKDB_PATH
+from hypermvp.config import PROCESSED_DATA_DIR, DUCKDB_PATH, AFRR_FILE_PATH
+from hypermvp.utils.db_versioning import create_duckdb_snapshot, add_version_metadata
 
 def save_afrr_to_duckdb(cleaned_afrr_data, month, year, table_name="afrr_data", db_path=None):
     """
@@ -19,22 +20,29 @@ def save_afrr_to_duckdb(cleaned_afrr_data, month, year, table_name="afrr_data", 
     Returns:
         int: Number of rows inserted into the database.
     """
-    start_time = time.time()
-    
     if db_path is None:
         db_path = DUCKDB_PATH
     
+    start_time = time.time()
+    
     try:
-        # Ensure the processed data directory exists
+        # Create snapshot before making changes
+        create_duckdb_snapshot(db_path)
+        
+        # Create database and connect
         os.makedirs(os.path.dirname(db_path), exist_ok=True)
+        conn = duckdb.connect(db_path)
+        
+        # Add version metadata
+        source_file = 'afrr_data_source'  # Default value for tests
+        if 'AFRR_FILE_PATH' in globals():
+            source_file = AFRR_FILE_PATH
+        add_version_metadata(conn, [source_file], f"afrr_update_{month}_{year}")
 
         # Add month and year columns to the data
         data = cleaned_afrr_data.copy()
         data["month"] = month
         data["year"] = year
-
-        # Connect to the DuckDB database
-        conn = duckdb.connect(db_path)
 
         # Check if the table exists
         table_exists = conn.execute(

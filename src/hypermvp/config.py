@@ -1,5 +1,7 @@
 import os
 from pathlib import Path
+from datetime import datetime
+import logging
 
 # Define base directory (project root)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -10,8 +12,8 @@ RAW_DATA_DIR = os.path.join(DATA_DIR, "01_raw")
 PROCESSED_DATA_DIR = os.path.join(DATA_DIR, "02_processed")
 OUTPUT_DATA_DIR = os.path.join(DATA_DIR, "03_output")
 
-# DuckDB paths (moved to PROCESSED_DATA_DIR with clear naming)
-DUCKDB_DIR = os.path.join(PROCESSED_DATA_DIR, 'duckdb')  # Now points to 02_processed/duckdb
+# DuckDB paths (moved to OUTPUT_DATA_DIR)
+DUCKDB_DIR = OUTPUT_DATA_DIR  # DuckDB files go directly into 03_output
 PROVIDER_DUCKDB_PATH = os.path.join(DUCKDB_DIR, "provider_data.duckdb")
 AFRR_DUCKDB_PATH = os.path.join(DUCKDB_DIR, "afrr_data.duckdb")
 
@@ -33,7 +35,7 @@ TEST_DATA_DIR = os.path.join(BASE_DIR, 'tests', 'tests_data')
 RAW_TEST_DIR = os.path.join(TEST_DATA_DIR, 'raw')
 PROCESSED_TEST_DIR = os.path.join(TEST_DATA_DIR, 'processed')
 OUTPUT_TEST_DIR = os.path.join(TEST_DATA_DIR, 'output')
-TEST_DUCKDB_DIR = os.path.join(OUTPUT_TEST_DIR, 'duckdb')
+TEST_DUCKDB_DIR = OUTPUT_TEST_DIR # Test DuckDB files go directly into tests/tests_data/output
 TEST_PROVIDER_DUCKDB_PATH = os.path.join(TEST_DUCKDB_DIR, "provider_data.duckdb")
 TEST_AFRR_DUCKDB_PATH = os.path.join(TEST_DUCKDB_DIR, "afrr_data.duckdb")
 
@@ -41,31 +43,6 @@ TEST_AFRR_DUCKDB_PATH = os.path.join(TEST_DUCKDB_DIR, "afrr_data.duckdb")
 os.makedirs(RAW_DATA_DIR, exist_ok=True)
 os.makedirs(PROCESSED_DATA_DIR, exist_ok=True)
 os.makedirs(OUTPUT_DATA_DIR, exist_ok=True)
-os.makedirs(DUCKDB_DIR, exist_ok=True)
 os.makedirs(RAW_TEST_DIR, exist_ok=True)
 os.makedirs(PROCESSED_TEST_DIR, exist_ok=True)
 os.makedirs(OUTPUT_TEST_DIR, exist_ok=True)
-os.makedirs(TEST_DUCKDB_DIR, exist_ok=True)
-
-# Optional: Comment out the debugging prints in production code
-# or keep them only if needed during development
-'''
-print(f"BASE_DIR: {BASE_DIR}")
-print(f"DATA_DIR: {DATA_DIR}")
-print(f"RAW_DATA_DIR: {RAW_DATA_DIR}")
-print(f"PROCESSED_DATA_DIR: {PROCESSED_DATA_DIR}")
-print(f"OUTPUT_DATA_DIR: {OUTPUT_DATA_DIR}")
-print(f"DUCKDB_DIR: {DUCKDB_DIR}")
-print(f"PROVIDER_DUCKDB_PATH: {PROVIDER_DUCKDB_PATH}")
-print(f"AFRR_DUCKDB_PATH: {AFRR_DUCKDB_PATH}")
-print(f"AFRR_FILE_PATH: {AFRR_FILE_PATH}")
-print(f"PROVIDER_FILE_PATHS: {PROVIDER_FILE_PATHS}")
-print(f"TEST_DATA_DIR: {TEST_DATA_DIR}")
-print(f"RAW_TEST_DIR: {RAW_TEST_DIR}")
-print(f"PROCESSED_TEST_DIR: {PROCESSED_TEST_DIR}")
-print(f"OUTPUT_TEST_DIR: {OUTPUT_TEST_DIR}")
-print(f"TEST_DUCKDB_DIR: {TEST_DUCKDB_DIR}")
-print(f"TEST_PROVIDER_DUCKDB_PATH: {TEST_PROVIDER_DUCKDB_PATH}")
-print(f"TEST_AFRR_DUCKDB_PATH: {TEST_AFRR_DUCKDB_PATH}")
-print(f"DUCKDB_PATH: {DUCKDB_PATH}")
-'''

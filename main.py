@@ -17,8 +17,8 @@ import re
 # Import configuration
 from hypermvp.config import (
     DATA_DIR, RAW_DATA_DIR, PROCESSED_DATA_DIR, 
-    OUTPUT_DATA_DIR, AFRR_FILE_PATH, DUCKDB_DIR,  # Add DUCKDB_DIR here
-    AFRR_DUCKDB_PATH  # Add this for a cleaner approach
+    OUTPUT_DATA_DIR, AFRR_FILE_PATH, DUCKDB_DIR,
+    AFRR_DUCKDB_PATH, PROVIDER_DUCKDB_PATH  # Added PROVIDER_DUCKDB_PATH here
 )
 
 import sys
@@ -32,7 +32,7 @@ for item in dir(config):
         print(f"- {item}")
 
 # Import provider modules
-from hypermvp.provider.loader import load_provider_file
+from hypermvp.provider.loader import load_provider_file, load_provider_data
 from hypermvp.provider.cleaner import clean_provider_data
 from hypermvp.provider.update_provider_data import update_provider_data
 
@@ -49,38 +49,41 @@ logging.basicConfig(
 )
 
 def process_provider_workflow():
-    """End-to-end workflow for processing provider data with timing logs."""
+    """End-to-end workflow for processing provider data."""
     try:
         logging.info("=== STARTING PROVIDER WORKFLOW ===")
         start = time.time()
 
-        # LOAD PHASE
+        # LOAD PHASE: Use the loader module to read files once.
         load_start = time.time()
-        provider_dfs = []
-        logging.info("Loading provider files from %s", RAW_DATA_DIR)
-        for filename in os.listdir(RAW_DATA_DIR):
-            if filename.endswith(".xlsx"):
-                filepath = os.path.join(RAW_DATA_DIR, filename)
-                logging.info("Loading file: %s", filepath)
-                df = load_provider_file(filepath)
-                provider_dfs.append(df)
-        if not provider_dfs:
-            logging.error("No provider files found in %s", RAW_DATA_DIR)
-            return
-        raw_data = pd.concat(provider_dfs, ignore_index=True)
+        raw_data = load_provider_data(RAW_DATA_DIR)
         logging.info("Loaded %d records in %.2f seconds",
                      len(raw_data), time.time() - load_start)
 
-        # CLEAN PHASE
+        # CLEAN PHASE: Clean the raw data.
         clean_start = time.time()
+        # Ensure clean_provider_data returns a DataFrame!
         cleaned_data = clean_provider_data(raw_data)
         logging.info("Cleaned data contains %d records in %.2f seconds",
                      len(cleaned_data), time.time() - clean_start)
 
-        # DATABASE UPDATE PHASE
+        # Force problematic columns to strings:
+        if "TYPE_OF_RESERVES" in cleaned_data.columns:
+            cleaned_data["TYPE_OF_RESERVES"] = cleaned_data["TYPE_OF_RESERVES"].astype(str)
+
+        if "PRODUCT" in cleaned_data.columns:
+            cleaned_data["PRODUCT"] = cleaned_data["PRODUCT"].astype(str)
+
+        # (Add any other forced conversions for VARCHAR columns as needed)
+
+        # ADD PERIOD COLUMN: Ensure the table schema includes the period column.
+        cleaned_data["period"] = cleaned_data["DELIVERY_DATE"].dt.floor("4h")
+
+        # DATABASE UPDATE PHASE: Update or create the DuckDB table.
         db_start = time.time()
-        db_path = os.path.join(PROCESSED_DATA_DIR, "provider_data.duckdb")
-        update_provider_data(RAW_DATA_DIR, db_path, "provider_data")
+        db_path = PROVIDER_DUCKDB_PATH  # Make sure this is set correctly in config.py (e.g., data/03_output/provider_data.duckdb)
+        # *** IMPORTANT: Pass the cleaned_data (a DataFrame), not RAW_DATA_DIR ***
+        update_provider_data(cleaned_data, db_path, "provider_data")
         logging.info("Database update complete at %s in %.2f seconds",
                      db_path, time.time() - db_start)
 

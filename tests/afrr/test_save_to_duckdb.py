@@ -4,8 +4,11 @@ import pandas as pd
 import duckdb
 from datetime import datetime
 from tempfile import TemporaryDirectory
+from unittest.mock import patch
 from hypermvp.afrr.save_to_duckdb import save_afrr_to_duckdb
+from hypermvp.utils.db_versioning import add_version_metadata
 
+@patch('hypermvp.afrr.save_to_duckdb.AFRR_FILE_PATH', 'test_file_path')
 class TestSaveAfrrToDuckDB(unittest.TestCase):
     
     def setUp(self):
@@ -53,6 +56,7 @@ class TestSaveAfrrToDuckDB(unittest.TestCase):
         
         # Check data content
         result = conn.execute(f"SELECT * FROM {self.table_name}").fetchdf()
+        
         conn.close()
         
         # Validate results
@@ -99,6 +103,7 @@ class TestSaveAfrrToDuckDB(unittest.TestCase):
         # Verify data was updated correctly (old data replaced)
         conn = duckdb.connect(self.db_path)
         result = conn.execute(f"SELECT * FROM {self.table_name}").fetchdf()
+        
         conn.close()
         
         # Should have only the new data for September 2024
