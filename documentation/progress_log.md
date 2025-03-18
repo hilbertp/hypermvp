@@ -148,3 +148,4 @@
 - Implement automated validation checks for marginal price calculations
 - Add documentation for the updated algorithm and workflow
 - add unit tests for the new modules
+- try scraping the rest of the data from online becuase clicking a few thousand times to get daily provider lsits is gonna get old real soon
