@@ -4,8 +4,7 @@
 
 * **Hours worked**: 4h
 * **Start time**: 15:00
-* **End time**: 19:00
-* **Branch**: main
+* **End time**: 19:00**Branch**: main
 
 ### Source Control Changes
 

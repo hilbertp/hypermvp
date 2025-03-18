@@ -18,7 +18,7 @@ import re
 from hypermvp.config import (
     DATA_DIR, RAW_DATA_DIR, PROCESSED_DATA_DIR, 
     OUTPUT_DATA_DIR, AFRR_FILE_PATH, DUCKDB_DIR,
-    AFRR_DUCKDB_PATH, PROVIDER_DUCKDB_PATH  # Added PROVIDER_DUCKDB_PATH here
+    AFRR_DUCKDB_PATH, PROVIDER_DUCKDB_PATH, ENERGY_DB_PATH  # Added ENERGY_DB_PATH here
 )
 
 import sys
@@ -81,7 +81,7 @@ def process_provider_workflow():
 
         # DATABASE UPDATE PHASE: Update or create the DuckDB table.
         db_start = time.time()
-        db_path = PROVIDER_DUCKDB_PATH  # Make sure this is set correctly in config.py (e.g., data/03_output/provider_data.duckdb)
+        db_path = ENERGY_DB_PATH  # Updated from PROVIDER_DUCKDB_PATH
         # *** IMPORTANT: Pass the cleaned_data (a DataFrame), not RAW_DATA_DIR ***
         update_provider_data(cleaned_data, db_path, "provider_data")
         logging.info("Database update complete at %s in %.2f seconds",
@@ -117,7 +117,7 @@ def process_afrr_workflow():
 
         # SAVE TO DUCKDB PHASE
         db_start = time.time()
-        db_path = AFRR_DUCKDB_PATH
+        db_path = ENERGY_DB_PATH  # Updated from AFRR_DUCKDB_PATH
         os.makedirs(os.path.dirname(AFRR_DUCKDB_PATH), exist_ok=True)
         save_afrr_to_duckdb(cleaned_afrr_data, 9, 2024, "afrr_data", db_path)
         logging.info("AFRR data saved to DuckDB at %s in %.2f seconds", db_path, time.time() - db_start)
@@ -128,6 +128,25 @@ def process_afrr_workflow():
         logging.error("Workflow failed: %s", e)
         raise
 
+def process_analysis_workflow(start_date="2024-09-01", end_date=None):
+    """Calculate marginal prices and other analytics."""
+    from hypermvp.analysis.marginal_price import calculate_marginal_prices, save_marginal_prices
+    
+    logging.info("=== STARTING ANALYSIS WORKFLOW ===")
+    start = time.time()
+    
+    # Calculate marginal prices
+    results = calculate_marginal_prices(start_date, end_date)
+    
+    # Save results to database
+    if not results.empty:
+        save_marginal_prices(results)
+        logging.info(f"Saved {len(results)} marginal price calculations")
+    
+    logging.info("Total analysis took %.2f seconds", time.time() - start)
+    logging.info("=== ANALYSIS WORKFLOW COMPLETE ===")
+
+# Fix the main() function to handle all workflow options:
 def main():
     # Setup command-line argument parsing
     parser = argparse.ArgumentParser(
@@ -136,9 +155,19 @@ def main():
     )
     parser.add_argument(
         "--workflow",
-        choices=["provider", "afrr"],
+        choices=["provider", "afrr", "analysis", "all"],  # This line needs the updated choices
         default="provider",
         help="Select processing workflow"
+    )
+    parser.add_argument(
+        "--start-date",
+        default="2024-09-01",
+        help="Start date for analysis (YYYY-MM-DD)"
+    )
+    parser.add_argument(
+        "--end-date",
+        default=None,
+        help="End date for analysis (YYYY-MM-DD)"
     )
     
     args = parser.parse_args()
@@ -148,6 +177,12 @@ def main():
         process_provider_workflow()
     elif args.workflow == "afrr":
         process_afrr_workflow()
+    elif args.workflow == "analysis":
+        process_analysis_workflow(args.start_date, args.end_date)
+    elif args.workflow == "all":
+        process_provider_workflow()
+        process_afrr_workflow()
+        process_analysis_workflow(args.start_date, args.end_date)
 
 if __name__ == "__main__":
     main()

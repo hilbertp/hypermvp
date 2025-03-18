@@ -5,6 +5,7 @@ from tempfile import TemporaryDirectory
 import pandas as pd
 from hypermvp.utils.db_versioning import create_duckdb_snapshot, add_version_metadata, cleanup_old_snapshots
 import shutil
+import gzip
 
 class TestDbVersioning(unittest.TestCase):
     def test_snapshot_creation(self):
@@ -17,11 +18,14 @@ class TestDbVersioning(unittest.TestCase):
         conn.execute("CREATE TABLE test (id INTEGER)")
         conn.close()
         
-        # Create snapshot
-        snapshot_path = create_duckdb_snapshot(db_path)
+        # Create snapshot - FORCE ENABLE for testing
+        snapshot_path = create_duckdb_snapshot(db_path, force_enable=True)
         
         # Verify snapshot exists
         self.assertTrue(os.path.exists(snapshot_path))
+        
+        # Clean up
+        temp_dir.cleanup()
 
     def test_version_metadata(self):
         """Test that version metadata is correctly added to the database."""
@@ -33,14 +37,22 @@ class TestDbVersioning(unittest.TestCase):
         conn = duckdb.connect(db_path)
         conn.execute("CREATE TABLE test (id INTEGER)")
         
+        # Create version_history table
+        conn.execute("""
+            CREATE TABLE version_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                operation VARCHAR,
+                source_files VARCHAR
+            )
+        """)
+
         # Add version metadata
         source_files = ["/path/to/test/file.csv"]
         add_version_metadata(conn, source_files, "test_operation")
         
         # Verify metadata was added
         result = conn.execute("SELECT * FROM version_history").fetchall()
-        conn.close()
-        
         # Clean up
         temp_dir.cleanup()
         
@@ -48,6 +60,8 @@ class TestDbVersioning(unittest.TestCase):
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0][2], "test_operation")
         self.assertEqual(result[0][3], str(source_files))
+        
+        conn.close()
 
     def test_snapshot_cleanup(self):
         """Test that old snapshots are properly cleaned up."""
@@ -56,11 +70,11 @@ class TestDbVersioning(unittest.TestCase):
         snapshot_dir = os.path.join(temp_dir.name, "snapshots")
         os.makedirs(snapshot_dir)
         
-        # Create fake old snapshots
+        # Create fake old snapshots with .duckdb.gz extension
         base_name = "test_db"
         for i in range(10):
-            with open(os.path.join(snapshot_dir, f"{base_name}_{i}.duckdb"), "w") as f:
-                f.write("dummy data")
+            with gzip.open(os.path.join(snapshot_dir, f"{base_name}_{i}.duckdb.gz"), "wb") as f:
+                f.write(b"dummy data")  # Note: gzip requires bytes, not strings
         
         # Run cleanup (keep 5)
         cleanup_old_snapshots(snapshot_dir, base_name, keep=5)
@@ -86,8 +100,11 @@ class TestDbVersioning(unittest.TestCase):
         conn.execute("INSERT INTO test_table VALUES (1, 'original')")
         conn.close()
         
-        # Create snapshot
-        snapshot_path = create_duckdb_snapshot(db_path)
+        # Create snapshot - force enable for testing
+        snapshot_path = create_duckdb_snapshot(db_path, force_enable=True)
+        
+        # Verify snapshot was created
+        self.assertIsNotNone(snapshot_path)
         
         # "Corrupt" database by changing data
         conn = duckdb.connect(db_path)
@@ -100,8 +117,10 @@ class TestDbVersioning(unittest.TestCase):
         self.assertEqual(corrupted_value, "corrupted")
         conn.close()
         
-        # Recover from snapshot
-        shutil.copy2(snapshot_path, db_path)
+        # Recover from snapshot - need to decompress it first
+        with gzip.open(snapshot_path, 'rb') as f_in:
+            with open(db_path, 'wb') as f_out:
+                shutil.copyfileobj(f_in, f_out)
         
         # Verify data is restored
         conn = duckdb.connect(db_path)

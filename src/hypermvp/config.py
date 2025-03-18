@@ -12,13 +12,14 @@ RAW_DATA_DIR = os.path.join(DATA_DIR, "01_raw")
 PROCESSED_DATA_DIR = os.path.join(DATA_DIR, "02_processed")
 OUTPUT_DATA_DIR = os.path.join(DATA_DIR, "03_output")
 
-# DuckDB paths (moved to OUTPUT_DATA_DIR)
-DUCKDB_DIR = OUTPUT_DATA_DIR  # DuckDB files go directly into 03_output
-PROVIDER_DUCKDB_PATH = os.path.join(DUCKDB_DIR, "provider_data.duckdb")
-AFRR_DUCKDB_PATH = os.path.join(DUCKDB_DIR, "afrr_data.duckdb")
+# DuckDB paths - use consistent subfolder and single file
+DUCKDB_DIR = os.path.join(OUTPUT_DATA_DIR, "duckdb")
+ENERGY_DB_PATH = os.path.join(DUCKDB_DIR, "energy_data.duckdb")
 
-# For backward compatibility - you can remove this after updating all references
-DUCKDB_PATH = PROVIDER_DUCKDB_PATH
+# For backward compatibility 
+DUCKDB_PATH = ENERGY_DB_PATH
+PROVIDER_DUCKDB_PATH = ENERGY_DB_PATH
+AFRR_DUCKDB_PATH = ENERGY_DB_PATH
 
 # File paths
 AFRR_FILE_PATH = os.path.join(RAW_DATA_DIR, "testdata_aFRR_sept.csv")
@@ -35,14 +36,17 @@ TEST_DATA_DIR = os.path.join(BASE_DIR, 'tests', 'tests_data')
 RAW_TEST_DIR = os.path.join(TEST_DATA_DIR, 'raw')
 PROCESSED_TEST_DIR = os.path.join(TEST_DATA_DIR, 'processed')
 OUTPUT_TEST_DIR = os.path.join(TEST_DATA_DIR, 'output')
-TEST_DUCKDB_DIR = OUTPUT_TEST_DIR # Test DuckDB files go directly into tests/tests_data/output
-TEST_PROVIDER_DUCKDB_PATH = os.path.join(TEST_DUCKDB_DIR, "provider_data.duckdb")
-TEST_AFRR_DUCKDB_PATH = os.path.join(TEST_DUCKDB_DIR, "afrr_data.duckdb")
+TEST_DUCKDB_DIR = os.path.join(OUTPUT_TEST_DIR, "duckdb")  # Consistent subfolder here too
+TEST_ENERGY_DB_PATH = os.path.join(TEST_DUCKDB_DIR, "energy_data.duckdb")
+TEST_PROVIDER_DUCKDB_PATH = TEST_ENERGY_DB_PATH
+TEST_AFRR_DUCKDB_PATH = TEST_ENERGY_DB_PATH
 
 # Ensure all directories exist
 os.makedirs(RAW_DATA_DIR, exist_ok=True)
 os.makedirs(PROCESSED_DATA_DIR, exist_ok=True)
 os.makedirs(OUTPUT_DATA_DIR, exist_ok=True)
+os.makedirs(DUCKDB_DIR, exist_ok=True)  # Create the duckdb subfolder
 os.makedirs(RAW_TEST_DIR, exist_ok=True)
 os.makedirs(PROCESSED_TEST_DIR, exist_ok=True)
 os.makedirs(OUTPUT_TEST_DIR, exist_ok=True)
+os.makedirs(TEST_DUCKDB_DIR, exist_ok=True)  # Create the test duckdb subfolder

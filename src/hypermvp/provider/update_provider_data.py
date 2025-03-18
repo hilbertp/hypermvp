@@ -84,6 +84,13 @@ def update_provider_data(cleaned_data, db_path, table_name="provider_data"):
 
         con.commit()
         logging.info("Provider data updated. Time taken: %.2f seconds", time.time() - start_time)
+
+        from hypermvp.utils.db_versioning import vacuum_database
+        try:
+            vacuum_database(con)  # Here 'con' is defined because it's in the update_provider_data.py scope
+        except Exception as e:
+            logging.warning(f"Vacuum failed: {e}")
+
     except Exception as e:
         logging.error("Error in update_provider_data: %s", e)
         raise

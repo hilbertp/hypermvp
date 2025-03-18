@@ -1,11 +1,35 @@
 import os
 import logging
 import shutil
+import gzip
 from datetime import datetime
+from hypermvp.config import OUTPUT_DATA_DIR, PROVIDER_DUCKDB_PATH  # Import both needed config variables
 
-def create_duckdb_snapshot(db_path):
-    """Create a timestamped snapshot of the DuckDB file before making changes."""
+# Add this flag at the top of the file
+ENABLE_SNAPSHOTS = False  # Set to True when ready for production
+
+# Define snapshot directory using direct path from config
+SNAPSHOT_DIR = os.path.join(OUTPUT_DATA_DIR, "snapshots")
+
+def create_duckdb_snapshot(db_path, keep=3, force_enable=False):
+    """
+    Create a compressed snapshot of the DuckDB file before making changes.
+    
+    Args:
+        db_path: Path to the database file to snapshot
+        keep: Number of snapshots to keep
+        force_enable: If True, create snapshot even if ENABLE_SNAPSHOTS is False (for testing)
+    """
+    if not (ENABLE_SNAPSHOTS or force_enable):
+        logging.info("Snapshots disabled for pilot phase")
+        return None
+
+    if not os.path.exists(db_path):
+        logging.info(f"No database at {db_path} to snapshot")
+        return None
+
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    # For tests, use directory where the db is located
     snapshot_dir = os.path.join(os.path.dirname(db_path), "snapshots")
     os.makedirs(snapshot_dir, exist_ok=True)
     
@@ -13,22 +37,24 @@ def create_duckdb_snapshot(db_path):
     base_name = os.path.basename(db_path)
     name_without_ext = os.path.splitext(base_name)[0]
     
-    # Create snapshot path
-    snapshot_path = os.path.join(snapshot_dir, f"{name_without_ext}_{timestamp}.duckdb")
+    # Create compressed snapshot path
+    snapshot_path = os.path.join(snapshot_dir, f"{name_without_ext}_{timestamp}.duckdb.gz")
     
-    # Only create snapshot if the original file exists
-    if os.path.exists(db_path):
-        shutil.copy2(db_path, snapshot_path)
-        logging.info(f"Created database snapshot: {snapshot_path}")
-        
-        # Optional: Cleanup old snapshots (keep last 5)
-        cleanup_old_snapshots(snapshot_dir, name_without_ext, keep=5)
+    # Create compressed copy
+    with open(db_path, 'rb') as f_in:
+        with gzip.open(snapshot_path, 'wb') as f_out:
+            shutil.copyfileobj(f_in, f_out)
+    logging.info(f"Created compressed database snapshot: {snapshot_path}")
+    
+    # Cleanup old snapshots
+    cleanup_old_snapshots(snapshot_dir, name_without_ext, keep)
     
     return snapshot_path
 
-def cleanup_old_snapshots(snapshot_dir, base_name, keep=5):
+def cleanup_old_snapshots(snapshot_dir, base_name, keep=3):
     """Keep only the N most recent snapshots to avoid disk space issues."""
-    snapshots = [f for f in os.listdir(snapshot_dir) if f.startswith(base_name)]
+    snapshots = [f for f in os.listdir(snapshot_dir) 
+               if f.startswith(base_name) and f.endswith('.duckdb.gz')]
     snapshots.sort(reverse=True)  # Sort by timestamp descending
     
     # Remove older snapshots beyond the keep count
@@ -38,7 +64,7 @@ def cleanup_old_snapshots(snapshot_dir, base_name, keep=5):
 
 def add_version_metadata(conn, source_files, operation_type):
     """Add version metadata to track the lineage of data operations."""
-    # Create version table if it doesn't exist (without AUTOINCREMENT)
+    # Create version table if it doesn't exist 
     conn.execute("""
         CREATE TABLE IF NOT EXISTS version_history (
             version_id INTEGER PRIMARY KEY,
@@ -49,7 +75,7 @@ def add_version_metadata(conn, source_files, operation_type):
         )
     """)
     
-    # Get the next version_id (max + 1 or 1 if the table is empty)
+    # Get the next version_id 
     max_id = conn.execute("SELECT COALESCE(MAX(version_id), 0) + 1 FROM version_history").fetchone()[0]
     
     # Insert with explicit version_id
@@ -63,3 +89,11 @@ def add_version_metadata(conn, source_files, operation_type):
         str(source_files),
         os.environ.get('USER', 'unknown')
     ))
+
+def vacuum_database(conn):
+    """Reclaim space in the database after operations."""
+    try:
+        conn.execute("VACUUM")
+        logging.info("Database vacuumed to reclaim space")
+    except Exception as e:
+        logging.warning(f"Failed to vacuum database: {e}")

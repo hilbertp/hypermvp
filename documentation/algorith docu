@@ -1,153 +1,99 @@
-### Marginal Price Analysis for Balancing Energy Markets
 
-To optimize profitability and pricing strategy in the secondary control energy market, it is critical
-to calculate the marginal price—the highest price activated for balancing energy in a specific
-15-minute interval.
+# Marginal Price Analysis for Balancing Energy Markets
 
-This document outlines the algorithm for determining the marginal price and its implementation.
+This document provides a functional overview of the algorithm for calculating the **marginal price**—the highest price activated for balancing energy in a specific 15-minute interval—in the German automatic Frequency Restoration Reserve (aFRR) market. It focuses solely on the **business logic**, outlining the processes and decisions involved. The approach optimizes profitability and pricing strategy by reflecting the market practice that provider pools are specific to each 15-minute interval rather than fixed across 4-hour blocks.
 
----
-
-## Algorithm: Determining the Marginal Price
-
-### 1. **Data Acquisition**
-#### Required Data:
-- **Automatic Frequency Restoration Reserve (aFRR) Data**: 15-minute interval data for activated
-  negative aFRR from various TSOs (Transmission System Operators).
-- **Provider Offer Data**: Price and capacity information for aFRR offers.
-
-#### Sources:
-- [Netztransparenz: Activated Balancing Power Data](https://www.netztransparenz.de/de-de/Regelenergie/Daten-Regelreserve/Aktivierte-Regelleistung)
-- [Regelleistung Data Center](https://www.regelleistung.net)
+## Key Insight: Provider Pool Granularity
+While providers are legally required to offer services across an entire 4-hour block, market data reveals fluctuations in tenders within these periods. Consequently, the provider pool is not fixed across the 4-hour block but is instead specific to each **15-minute interval**. Providers submit separate bids for each 15-minute period, enabling a precise match between the aFRR need and the available offers. This granularity simplifies mapping aFRR demand to available offers and enhances the accuracy of marginal price calculations.
 
 ---
 
-### 2. **Data Preparation**
-#### Import Data:
-- Three types of data files are imported:
-  - **File 1**: Activated aFRR volumes (positive and negative) for 15-minute intervals.
-  - **File 2**: Provider offers with volumes and prices.
+## Terminology for Time Periods
+The balancing energy market relies on specific time period definitions:
 
-#### Provider Data Loading:
-The `load_provider_file` function loads provider data from an XLSX file:
-```python
-from loader import load_provider_file
+- **15-Minuten-Perioden** (German) / **15-minute intervals** or **quarter-hour intervals** (English):  
+  These are the time units for reporting and settling aFRR volumes, as well as the basis for provider bids and activations.
 
-provider_data = load_provider_file('path/to/provider_file.xlsx')
-```
-
-#### Provider Data Cleaning:
-The `clean_provider_data` function cleans and transforms provider data:
-- Validates required columns.
-- Converts `DELIVERY_DATE` to datetime format.
-- Adjusts `ENERGY_PRICE_[EUR/MWh]` based on `ENERGY_PRICE_PAYMENT_DIRECTION`.
-- Sorts the DataFrame by delivery date, product, and price.
-
-```python
-from cleaner import clean_provider_data
-
-cleaned_provider_data = clean_provider_data(provider_data)
-```
-
-#### Merging Cleaned Data:
-The `merge_cleaned_data` function integrates the cleaned provider data into a combined DataFrame:
-```python
-from merger import merge_cleaned_data
-
-combined_data = merge_cleaned_data(existing_combined_data, cleaned_provider_data)
-```
+- **4-Stunden-Perioden** (German) / **4-hour blocks**, **4-hour time slices**, or **4-hour product periods** (English):  
+  These are the broader periods for tendering and procurement, though provider offers are submitted and managed for each 15-minute interval within them.
 
 ---
 
-### 3. **Understanding the Merit Order Principle**
-#### Sorting Offers:
-- Offers are sorted by price.
-- The direction of payment is considered:
-  - **Provider-to-Grid** prices (negative prices) are adjusted: `price = -price`.
-  - **Grid-to-Provider** prices remain positive.
+## Data Acquisition and Preparation
+The analysis requires two key datasets:
+
+1. **aFRR Activation Data**:  
+   - Details the activated aFRR volumes (positive or negative) for each 15-minute interval.
+   - This data is sourced from files, cleaned for accuracy, and stored for analysis.
+
+2. **Provider Offer Data**:  
+   - Includes bids from providers for each 15-minute interval, specifying capacities (in MW) and energy prices (in EUR/MWh).
+   - This data is similarly loaded, cleaned, and prepared.
+
+The preparation process involves:  
+- Loading data from files.  
+- Cleaning it for consistency and accuracy (e.g., validating entries, standardizing formats).  
+- Saving the cleaned data for use in the analysis.  
+
+Since provider offers align with the 15-minute intervals of the activation data, no complex mapping across broader periods is needed.
 
 ---
 
-### 4. **Determining Marginal Price for an Interval**
-#### Steps:
-1. Identify the activated negative aFRR volume for a specific interval (e.g., 80.528 MW for 50Hertz
-   at 16:00–16:15 on April 17, 2024).
-2. Match the offers to the corresponding interval product identifier (e.g., `NEG_065`).
+## Merit Order Principle
+The **merit order principle** determines how the Transmission System Operator (TSO) selects provider offers:  
+
+- For **negative aFRR**, offers are sorted by energy price in **ascending order**:  
+  - From the most negative prices (where providers pay the TSO the most) to less negative, then to positive prices from lowest to highest.  
+- The TSO activates offers starting with the lowest price, continuing until the required aFRR volume is met.  
+
+This ensures the TSO minimizes costs by prioritizing the most cost-effective offers.
 
 ---
 
-### 5. **Filtering and Sorting Offers**
-- Filter offers for the specific interval.
-- Sort filtered offers by adjusted prices.
+## Determining the Marginal Price
+The marginal price is the energy price of the last offer activated to fulfill the aFRR demand in a given 15-minute interval. The steps are:  
+
+1. **Identify the 15-minute interval** using its product code (e.g., `NEG_065` for 16:00–16:15).  
+2. **Retrieve provider offers** for that interval from the prepared data.  
+3. **Sort the offers** by energy price in ascending order (for negative aFRR).  
+4. **Determine the activated aFRR volume** for the interval from the activation data.  
+5. **Calculate the marginal price**:  
+   - Start with an accumulated capacity of zero.  
+   - Add each offer’s capacity in sequence, tracking the total.  
+   - Stop when the accumulated capacity meets or exceeds the activated volume.  
+   - The energy price of the last offer included is the marginal price.  
+
+If the activated volume exceeds the total available capacity, the marginal price is the energy price of the final offer in the sorted list.
 
 ---
 
-### 6. **Calculating Marginal Price**
-#### Initialization:
-- **Accumulated Volume (`accumulated_mw`)**: Total activated capacity up to the marginal price.
-- **Marginal Price (`marginal_price`)**: Price of the last activated offer.
+## Example: Marginal Price Calculation
+Consider a 15-minute interval (`NEG_065`, 16:00–16:15 on April 17, 2024) with an activated volume of **80.528 MW**. The provider offers are:  
 
-#### Iterative Summation:
-1. Iterate through sorted offers.
-2. Add offered capacity to `accumulated_mw` until the total demand (`total_mw_needed`) is met.
-3. The price of the last activated offer is set as the marginal price.
+- Provider A: 30 MW at -5.00 EUR/MWh  
+- Provider B: 30 MW at -4.00 EUR/MWh  
+- Provider C: 30 MW at -3.87 EUR/MWh  
+- Provider D: 40 MW at 10.00 EUR/MWh  
 
----
+### Process:  
+1. **Sort offers by energy price (ascending)**:  
+   - Provider A: -5.00 EUR/MWh  
+   - Provider B: -4.00 EUR/MWh  
+   - Provider C: -3.87 EUR/MWh  
+   - Provider D: 10.00 EUR/MWh  
 
-### Milestones for Development
+2. **Accumulate capacities until exceeding 80.528 MW**:  
+   - Provider A: 30 MW (total = 30 MW)  
+   - Provider B: 30 MW (total = 60 MW)  
+   - Provider C: 30 MW (total = 90 MW, exceeds 80.528 MW)  
 
-#### Milestone 1: Sample Run for a 4-Hour Period
-- **Goal**: Perform a test run of the algorithm for a 4-hour time window.
-- **Reason**: Minimize the amount of data required and ensure short runtime for initial analysis.
+3. **Determine the marginal price**:  
+   - The last offer included is Provider C at **-3.87 EUR/MWh**.  
 
-#### Milestone 2: Full Week Analysis
-- **Goal**: Extend the algorithm to analyze data over a full week.
-- **Requirements**:
-  - Automate data gathering for the specified time span.
-  - Ensure efficient loading, cleaning, and merging of data.
-
-#### Milestone 3: Arbitrary Time Span
-- **Goal**: Enable the algorithm to analyze data for any user-specified time span.
-- **Capabilities**:
-  - Gather required data autonomously from online sources.
-  - Load, clean, and merge the data appropriately.
-  - Execute all necessary mathematical operations to provide insights.
-
----
-
-### Future Goal: Profitability Estimation Function
-
-The ultimate objective is to establish a function that:
-1. Takes a user-defined Arbeitspreis (work price) as input.
-2. Calculates the weekly calls based on this input.
-3. Provides estimates for profitability, enabling strategic decision-making.
-
-This capability will allow providers to simulate scenarios and optimize pricing strategies effectively.
-
----
-
-### Example: Marginal Price Calculation
-#### Input:
-- Activated volume: **80.528 MW** for 50Hertz at 16:00–16:15 on April 17, 2024.
-
-#### Process:
-1. **Sort offers** by price and iterate through them.
-2. Sum capacities until reaching or exceeding the required 80.528 MW.
-3. Marginal price = Price of the last activated offer.
-
-#### Result:
-- Marginal price = **-3.87 EUR/MWh** for 80.528 MW.
-- If demand was 138 MW, the marginal price would be **14.04 EUR/MWh**.
+Thus, the marginal price is **-3.87 EUR/MWh**.
 
 ---
 
 ## Conclusion
-This algorithm effectively determines the marginal price by:
-- Adjusting for payment direction.
-- Sorting and filtering offers.
-- Iteratively summing offers to meet the demand.
+This method accurately calculates the marginal price in the German aFRR market by aligning provider offers with each **15-minute interval**. By matching aFRR needs directly to the corresponding provider pool, it enhances pricing precision, supporting improved profitability and strategic decisions in the balancing energy market.
 
-By applying this approach, providers can optimize their pricing strategies and better understand
-market dynamics.
-
----
