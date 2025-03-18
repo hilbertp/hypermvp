@@ -60,3 +60,91 @@
 - Evaluate snapshot retention policy to prevent database size bloat
 - Add compression for snapshots
 - Consider implementing VACUUM command for space reclamation
+
+
+## 2025-03-19 and -18
+
+* **Hours worked**: 8h
+* **Branch**: main
+
+### Algorithm Refinements
+
+- **Critical algorithm revision**: Revised understanding of the market structure:
+
+  - Providers are legally required to offer services across entire 4-hour blocks
+  - However, the actual provider pool is specific to each 15-minute interval
+  - This granularity enables precise mapping between aFRR demand and provider offers
+  - Fixed algorithm to reflect this key insight from the regulatory documentation
+- **Product code mapping corrected**:
+
+  - Discovered product codes (NEG_001 through NEG_096) map directly to 15-minute intervals
+  - Each code represents a specific quarter-hour of the day (e.g., NEG_033 = 08:00-08:15)
+  - Implemented proper conversion between timestamp and product code
+  - Updated algorithm to query offers for the exact 15-minute product code
+- **Regulatory compliance investigation**:
+
+  - Created `analyze_bid_distribution.py` to investigate provider behavior
+  - Analyzed bid counts across 15-minute intervals within each 4-hour block
+  - Identified fluctuations in provider participation despite regulatory requirements
+  - Enabled analysis to understand market dynamics and potential regulatory gaps
+
+### Source Control Changes
+
+- **Files Modified**: 5
+
+  - `src/hypermvp/analysis/marginal_price.py`: Updated algorithm to handle NULL values for intervals with no activation
+  - `src/hypermvp/analysis/plot_marginal_prices.py`: Enhanced visualization to properly show gaps for intervals with no activation
+  - `src/hypermvp/analysis/view_marginal_prices.py`: Added viewer for marginal price data
+  - `main.py`: Added support for analysis workflow
+  - `src/hypermvp/config.py`: Verified output directory configuration
+- **Files Added**: 2
+
+  - `src/hypermvp/analysis/debug_offers.py`: Created tool for debugging provider offers
+  - `src/hypermvp/analysis/analyze_bid_distribution.py`: Added analysis for investigating bid distribution across intervals
+
+### Features Added
+
+- **Analysis workflow** in main.py for end-to-end marginal price calculation
+- **Improved marginal price visualization** with proper gap handling for intervals with no activation
+- **Provider offer debugging tools** to inspect bid data
+- **Bid distribution analysis** to investigate regulatory compliance of 4-hour blocks
+
+### Features Changed
+
+- **Marginal price calculation algorithm** updated to:
+
+  - Include all intervals with NULL prices for periods with no activation
+  - Correctly map 15-minute products (NEG_001 through NEG_096)
+  - Follow the merit order principle for providers within each 15-minute interval
+  - Handle edge cases like zero-priced offers
+- **Module organization improved**:
+
+  - Separated core calculation logic (`marginal_price.py`) from CLI interface (`marginal_price_cli.py`)
+  - Added proper function and module documentation
+  - Ensured consistent naming conventions
+
+### Technical Details
+
+- Fixed critical issue with SQL comments in DuckDB queries (replaced Python-style # comments with SQL-style -- comments)
+- Implemented correct mapping between quarter-hour intervals and provider product codes
+- Added mechanisms to distinguish between zero prices (valid market data) and NULL prices (no activation)
+- Verified NEG product codes map to specific 15-minute intervals rather than 4-hour blocks
+- Implemented granular analysis of bid distribution to investigate regulatory compliance
+- Created enhanced visualization that properly shows gaps for intervals with no activation data
+
+### Issues Solved
+
+- **Market granularity misunderstanding**: Corrected algorithm to reflect that provider pools are specific to 15-minute intervals, not fixed across 4-hour blocks
+- **Product code mapping**: Fixed the mapping between timestamps and NEG_XXX product codes
+- **SQL syntax errors**: Fixed improper comment syntax in SQL queries
+- **Misleading zero values**: Replaced with NULL/gaps in visualization for intervals with no activation
+- **Redundant module names**: Reorganized and renamed modules for clarity
+- **Missing intervals**: Now including all 96 quarter-hours with proper NULL handling
+- **Data mapping**: Correctly mapped aFRR activation data to corresponding provider product codes
+
+### Next Steps
+
+- Extend analysis to additional dates beyond Sept 1
+- Implement automated validation checks for marginal price calculations
+- Add documentation for the updated algorithm and workflow
+- add unit tests for the new modules
