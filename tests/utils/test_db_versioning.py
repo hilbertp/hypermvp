@@ -1,6 +1,7 @@
 import os
 import unittest
 import duckdb
+import json 
 from tempfile import TemporaryDirectory
 import pandas as pd
 from hypermvp.utils.db_versioning import create_duckdb_snapshot, add_version_metadata, cleanup_old_snapshots
