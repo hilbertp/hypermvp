@@ -52,7 +52,9 @@ class TestDbVersioning(unittest.TestCase):
  
         # Add version metadata
         source_files = ["/path/to/test/file.csv"]
-        add_version_metadata(conn, source_files, "test_operation")
+        
+        # Change this line:
+        _test_add_version_metadata(conn, source_files, "test_operation")  
         
         # Verify metadata was added
         result = conn.execute("SELECT * FROM version_history").fetchall()
@@ -134,7 +136,7 @@ class TestDbVersioning(unittest.TestCase):
         # Clean up
         temp_dir.cleanup()
 
-def add_version_metadata(conn, source_files, operation):
+def _test_add_version_metadata(conn, source_files, operation):
     max_id = conn.execute("SELECT COALESCE(MAX(id), 0) + 1 FROM version_history").fetchone()[0]
     files_str = json.dumps(source_files)
     conn.execute(
