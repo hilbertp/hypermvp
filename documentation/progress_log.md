@@ -61,7 +61,6 @@
 - Add compression for snapshots
 - Consider implementing VACUUM command for space reclamation
 
-
 ## 2025-03-19 and -18
 
 * **Hours worked**: 8h
@@ -149,3 +148,55 @@
 - Add documentation for the updated algorithm and workflow
 - add unit tests for the new modules
 - try scraping the rest of the data from online becuase clicking a few thousand times to get daily provider lsits is gonna get old real soon
+
+##2025-03-22
+
+***Hours worked**: 4h
+
+***Start time**: 19:00
+
+***End time**: 23:00
+
+***Branch**: main
+
+###Source Control Changes
+
+-**Files Added**: 5
+
+  -`src/hypermvp/scrapers/base_scraper.py`: Created abstract base class with common scraping functionality
+
+  -`src/hypermvp/scrapers/afrr_scraper.py`: Implemented specialized scraper for aFRR activation data
+
+  -`src/hypermvp/scrapers/cli.py`: Added command-line interface for flexible date range processing
+
+  -`src/hypermvp/scrapers/config.py`: Created configuration for scrapers with user agents and retry settings
+
+  -`src/hypermvp/scrapers/__init__.py`: Package initialization file
+
+###Features Added
+
+-**Web scraping infrastructure** with robust error handling and retry logic
+
+-**AFRR data scraper** for netztransparenz.de with form submission capability
+
+-**Flexible CLI** with configurable date ranges and increment options
+
+-**Browser identity rotation** to avoid detection
+
+-**Automated download** capability for bulk historical data
+
+###Technical Details
+
+- Implemented robust retry logic with exponential backoff
+- Created form submission handler for ASP.NET with hidden field extraction
+- Added user agent rotation to prevent blocking
+- Built flexible date range generator for different time increments (day/month/year)
+- Successfully downloaded full year of aFRR data for 2024
+- Fixed issue with site's form structure and VIEWSTATE handling
+- Implemented proper file saving with path handling
+
+###Next Steps
+
+- Implement provider scraper for regelleistung.net
+- Add data validation for downloaded files
+- Create data transformation pipeline for scraped data

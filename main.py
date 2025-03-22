@@ -183,6 +183,11 @@ def main():
         process_provider_workflow()
         process_afrr_workflow()
         process_analysis_workflow(args.start_date, args.end_date)
+    # Optional enhancement (not required)
+    elif args.workflow == "visualize":
+        from hypermvp.analysis.plot_marginal_prices import plot_marginal_prices
+        plot_marginal_prices(args.start_date)
+        logging.info("Visualizations generated")
 
 if __name__ == "__main__":
     main()
