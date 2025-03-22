@@ -1,4 +1,3 @@
-# /home/philly/hypermvp/src/hypermvp/scrapers/afrr_scraper.py
 """Scraper for aFRR activation data from netztransparenz.de."""
 
 from hypermvp.scrapers.base_scraper import BaseScraper
