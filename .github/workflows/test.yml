@@ -20,7 +20,9 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest
+          # Install all required dependencies
+          pip install pytest pytest-mock beautifulsoup4 requests pandas
+          # Install the package in development mode
           pip install -e .
       
       - name: Create data directories
