@@ -64,7 +64,7 @@ class TestDbVersioning(unittest.TestCase):
         # Check results
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0][2], "test_operation")
-        self.assertEqual(result[0][3], str(source_files))
+        self.assertEqual(json.loads(result[0][3]), source_files)
         
         conn.close()
 
