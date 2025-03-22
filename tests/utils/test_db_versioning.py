@@ -40,12 +40,14 @@ class TestDbVersioning(unittest.TestCase):
         # Create version_history table
         conn.execute("""
             CREATE TABLE version_history (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id BIGINT PRIMARY KEY, 
                 timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 operation VARCHAR,
                 source_files VARCHAR
             )
         """)
+        # Add a separate sequence for ID generation
+        conn.execute("CREATE SEQUENCE version_seq")
 
         # Add version metadata
         source_files = ["/path/to/test/file.csv"]

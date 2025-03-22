@@ -149,43 +149,32 @@
 - add unit tests for the new modules
 - try scraping the rest of the data from online becuase clicking a few thousand times to get daily provider lsits is gonna get old real soon
 
-##2025-03-22
+## 2025-03-22
 
-***Hours worked**: 4h
+* **Hours worked**: 4h
+* **Start time**: 19:00
+* **End time**: 23:00
+* **Branch**: main
 
-***Start time**: 19:00
+### Source Control Changes
 
-***End time**: 23:00
+- **Files Added**: 5
 
-***Branch**: main
+  - `src/hypermvp/scrapers/base_scraper.py`: Created abstract base class with common scraping functionality
+  - `src/hypermvp/scrapers/afrr_scraper.py`: Implemented specialized scraper for aFRR activation data
+  - `src/hypermvp/scrapers/cli.py`: Added command-line interface for flexible date range processing
+  - `src/hypermvp/scrapers/config.py`: Created configuration for scrapers with user agents and retry settings
+  - `src/hypermvp/scrapers/__init__.py`: Package initialization file
 
-###Source Control Changes
+### Features Added
 
--**Files Added**: 5
+- **Web scraping infrastructure** with robust error handling and retry logic
+- **AFRR data scraper** for netztransparenz.de with form submission capability
+- **Flexible CLI** with configurable date ranges and increment options
+- **Browser identity rotation** to avoid detection
+- **Automated download** capability for bulk historical data
 
-  -`src/hypermvp/scrapers/base_scraper.py`: Created abstract base class with common scraping functionality
-
-  -`src/hypermvp/scrapers/afrr_scraper.py`: Implemented specialized scraper for aFRR activation data
-
-  -`src/hypermvp/scrapers/cli.py`: Added command-line interface for flexible date range processing
-
-  -`src/hypermvp/scrapers/config.py`: Created configuration for scrapers with user agents and retry settings
-
-  -`src/hypermvp/scrapers/__init__.py`: Package initialization file
-
-###Features Added
-
--**Web scraping infrastructure** with robust error handling and retry logic
-
--**AFRR data scraper** for netztransparenz.de with form submission capability
-
--**Flexible CLI** with configurable date ranges and increment options
-
--**Browser identity rotation** to avoid detection
-
--**Automated download** capability for bulk historical data
-
-###Technical Details
+### Technical Details
 
 - Implemented robust retry logic with exponential backoff
 - Created form submission handler for ASP.NET with hidden field extraction
@@ -195,7 +184,7 @@
 - Fixed issue with site's form structure and VIEWSTATE handling
 - Implemented proper file saving with path handling
 
-###Next Steps
+### Next Steps
 
 - Implement provider scraper for regelleistung.net
 - Add data validation for downloaded files
