@@ -60,8 +60,15 @@ def update_provider_data(cleaned_data, db_path, table_name="provider_data"):
         logging.info(f"Table {table_name} created with explicit schema")
 
         # Insert data using explicit column names - MUST MATCH the DataFrame column names
-        for period, group in cleaned_data.groupby("period"):
-            logging.info(f"Processing period {period}")
+        total_periods = len(cleaned_data['period'].unique())
+        logging.info(f"Processing {total_periods} time periods...")
+        
+        for i, (period, group) in enumerate(cleaned_data.groupby("period"), 1):
+            # Log first 5, every 10th, and last 5 periods
+            show_log = (i <= 5) or (i % 10 == 0) or (i > total_periods - 5)
+            
+            if show_log:
+                logging.info(f"Processing period {i}/{total_periods}: {period}")
             
             # Explicitly register with column names
             con.register("temp_df", group)
@@ -81,6 +88,11 @@ def update_provider_data(cleaned_data, db_path, table_name="provider_data"):
             """
             con.execute(insert_sql)
             con.unregister("temp_df")
+            
+            # Add percentage progress every 10th period or at the end
+            if i % 10 == 0 or i == total_periods:
+                pct_complete = (i / total_periods) * 100
+                logging.info(f"Progress: {pct_complete:.1f}% complete ({i}/{total_periods} periods)")
 
         con.commit()
         logging.info("Provider data updated. Time taken: %.2f seconds", time.time() - start_time)

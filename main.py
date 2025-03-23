@@ -14,22 +14,17 @@ from datetime import datetime
 import pandas as pd
 import re
 
+# Add after your imports
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning, 
+                      message="Workbook contains no default style, apply openpyxl's default")
+
 # Import configuration
 from hypermvp.config import (
     DATA_DIR, RAW_DATA_DIR, PROCESSED_DATA_DIR, 
     OUTPUT_DATA_DIR, AFRR_FILE_PATH, DUCKDB_DIR,
     AFRR_DUCKDB_PATH, PROVIDER_DUCKDB_PATH, ENERGY_DB_PATH  # Added ENERGY_DB_PATH here
 )
-
-import sys
-print(f"Config variables loaded: {dir(sys.modules['hypermvp.config'])}")
-
-# Add after imports
-from hypermvp import config
-print("Available config variables:")
-for item in dir(config):
-    if not item.startswith("__"):
-        print(f"- {item}")
 
 # Import provider modules
 from hypermvp.provider.loader import load_provider_file, load_provider_data
@@ -54,18 +49,46 @@ def process_provider_workflow():
         logging.info("=== STARTING PROVIDER WORKFLOW ===")
         start = time.time()
 
-        # LOAD PHASE: Use the loader module to read files once.
+        # LOAD PHASE: Use the loader module to read files from PROVIDER_RAW_DIR
         load_start = time.time()
-        raw_data = load_provider_data(RAW_DATA_DIR)
+        from hypermvp.config import PROVIDER_RAW_DIR, PROCESSED_DATA_DIR
+        import shutil
+        
+        logging.info("=" * 60)
+        logging.info("LOADING DATA")
+        logging.info("=" * 60)
+        
+        # Create processed directory for provider if it doesn't exist
+        processed_provider_dir = os.path.join(PROCESSED_DATA_DIR, "provider")
+        os.makedirs(processed_provider_dir, exist_ok=True)
+        
+        raw_data = load_provider_data(PROVIDER_RAW_DIR)  # Use the specific directory
         logging.info("Loaded %d records in %.2f seconds",
                      len(raw_data), time.time() - load_start)
 
+        # After loading data, add more detailed progress info:
+        if len(raw_data) > 0:
+            logging.info(f"Loaded {len(raw_data):,} rows with columns: {', '.join(raw_data.columns.tolist())}")
+            start_date = raw_data["DELIVERY_DATE"].min()
+            end_date = raw_data["DELIVERY_DATE"].max()
+            logging.info(f"Date range: {start_date} to {end_date}")
+            
+            products = raw_data["PRODUCT"].unique().tolist()
+            logging.info(f"Products: {', '.join(products[:10])}{'...' if len(products) > 10 else ''}")
+
+        # Get the list of files that were processed
+        from hypermvp import config
+        processed_files = config.PROVIDER_FILE_PATHS  # These were the files loaded
+        
         # CLEAN PHASE: Clean the raw data.
         clean_start = time.time()
+        logging.info("=" * 60)
+        logging.info("CLEANING DATA")
+        logging.info("=" * 60)
+        logging.info("Cleaning data...")
         # Ensure clean_provider_data returns a DataFrame!
         cleaned_data = clean_provider_data(raw_data)
-        logging.info("Cleaned data contains %d records in %.2f seconds",
-                     len(cleaned_data), time.time() - clean_start)
+        logging.info(f"Cleaned data contains {len(cleaned_data):,} records in {time.time() - clean_start:.2f} seconds")
 
         # Force problematic columns to strings:
         if "TYPE_OF_RESERVES" in cleaned_data.columns:
@@ -82,11 +105,41 @@ def process_provider_workflow():
         # DATABASE UPDATE PHASE: Update or create the DuckDB table.
         db_start = time.time()
         db_path = ENERGY_DB_PATH  # Updated from PROVIDER_DUCKDB_PATH
+        logging.info("=" * 60)
+        logging.info("UPDATING DATABASE")
+        logging.info("=" * 60)
+
+        # Add this to show total time periods being processed:
+        total_periods = cleaned_data['period'].nunique()
+        logging.info(f"Updating database at {db_path} with {len(cleaned_data):,} rows across {total_periods} time periods")
+        logging.info("(Showing progress for only a subset of periods to avoid cluttering the output)")
+
         # *** IMPORTANT: Pass the cleaned_data (a DataFrame), not RAW_DATA_DIR ***
         update_provider_data(cleaned_data, db_path, "provider_data")
         logging.info("Database update complete at %s in %.2f seconds",
                      db_path, time.time() - db_start)
 
+        # After database update is complete, move the files to processed directory
+        logging.info("=" * 60)
+        logging.info("ARCHIVING FILES")
+        logging.info("=" * 60)
+        logging.info("=== MOVING PROCESSED FILES TO ARCHIVE ===")
+        for file_path in processed_files:
+            if os.path.exists(file_path):
+                file_name = os.path.basename(file_path)
+                destination = os.path.join(processed_provider_dir, file_name)
+                
+                try:
+                    shutil.move(file_path, destination)
+                    logging.info(f"✓ File moved: {file_path} → {destination}")
+                except Exception as e:
+                    logging.error(f"✗ Failed to move file: {file_path} → {destination}")
+                    logging.error(f"  Error: {str(e)}")
+        
+        # Count moved files
+        moved_count = sum(1 for f in processed_files if not os.path.exists(f))
+        logging.info(f"=== MOVED {moved_count}/{len(processed_files)} FILES ===")
+                    
         logging.info("Total workflow took %.2f seconds", time.time() - start)
         logging.info("=== PROVIDER WORKFLOW COMPLETE ===")
     except Exception as e:
@@ -97,6 +150,13 @@ def process_afrr_workflow():
     try:
         logging.info("=== STARTING AFRR WORKFLOW ===")
         start = time.time()
+        
+        # Create processed directory for AFRR if it doesn't exist
+        from hypermvp.config import AFRR_RAW_DIR, PROCESSED_DATA_DIR, AFRR_FILE_PATH
+        import shutil
+        
+        processed_afrr_dir = os.path.join(PROCESSED_DATA_DIR, "afrr")
+        os.makedirs(processed_afrr_dir, exist_ok=True)
 
         # LOAD PHASE
         load_start = time.time()
@@ -122,6 +182,27 @@ def process_afrr_workflow():
         save_afrr_to_duckdb(cleaned_afrr_data, 9, 2024, "afrr_data", db_path)
         logging.info("AFRR data saved to DuckDB at %s in %.2f seconds", db_path, time.time() - db_start)
 
+        # After database update is complete, move the file to processed directory
+        logging.info("=== MOVING PROCESSED FILES TO ARCHIVE ===")
+        if os.path.exists(AFRR_FILE_PATH):
+            file_name = os.path.basename(AFRR_FILE_PATH)
+            destination = os.path.join(processed_afrr_dir, file_name)
+            
+            try:
+                shutil.move(AFRR_FILE_PATH, destination)
+                logging.info(f"✓ File moved: {AFRR_FILE_PATH} → {destination}")
+            except Exception as e:
+                logging.error(f"✗ Failed to move file: {AFRR_FILE_PATH} → {destination}")
+                logging.error(f"  Error: {str(e)}")
+        else:
+            logging.warning(f"! Source file not found: {AFRR_FILE_PATH}")
+        
+        # Verify the move
+        if not os.path.exists(AFRR_FILE_PATH) and os.path.exists(os.path.join(processed_afrr_dir, file_name)):
+            logging.info("=== FILE SUCCESSFULLY ARCHIVED ===")
+        else:
+            logging.warning("=== FILE ARCHIVING INCOMPLETE ===")
+                
         logging.info("Total workflow took %.2f seconds", time.time() - start)
         logging.info("=== AFRR WORKFLOW COMPLETE ===")
     except Exception as e:

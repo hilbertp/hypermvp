@@ -204,3 +204,5 @@ data/01_raw/provider/
 
 # End of https://www.toptal.com/developers/gitignore/api/visualstudiocode
 
+# Exclude processed data
+data/02_processed/

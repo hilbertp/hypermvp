@@ -11,21 +11,45 @@ def load_provider_file(filepath):
     return pd.read_excel(filepath)
 
 
-def load_provider_data(raw_dir):
+def load_provider_data(directory=None):
     """
-    Load all XLSX provider files from a given directory and return a combined DataFrame.
+    Load all provider data files from a directory.
+    
+    Args:
+        directory: Directory containing provider data files (defaults to PROVIDER_RAW_DIR)
+        
+    Returns:
+        DataFrame containing all provider data
     """
-    provider_dfs = []
-    logging.info("Loading provider files from %s", raw_dir)
-    for filename in os.listdir(raw_dir):
-        if filename.endswith(".xlsx"):
-            filepath = os.path.join(raw_dir, filename)
-            logging.info("Loading file: %s", filepath)
-            df = load_provider_file(filepath)
-            provider_dfs.append(df)
-    if not provider_dfs:
-        raise ValueError(f"No provider files found in {raw_dir}")
-    return pd.concat(provider_dfs, ignore_index=True)
+    from hypermvp.config import PROVIDER_RAW_DIR, PROVIDER_FILE_PATHS
+    
+    if directory is None:
+        directory = PROVIDER_RAW_DIR
+        file_paths = PROVIDER_FILE_PATHS
+    else:
+        # Handle custom directory case
+        file_paths = [
+            os.path.join(directory, file)
+            for file in os.listdir(directory)
+            if os.path.isfile(os.path.join(directory, file))
+            and (file.endswith(".xlsx") or file.endswith(".csv"))
+        ]
+    
+    logging.info(f"Loading provider files from {directory}")
+    
+    all_data = []
+    for file_path in file_paths:
+        try:
+            df = load_provider_file(file_path)
+            all_data.append(df)
+        except Exception as e:
+            logging.error(f"Error loading {file_path}: {e}")
+    
+    if not all_data:
+        logging.warning(f"No provider data files found in {directory}")
+        return pd.DataFrame()
+    
+    return pd.concat(all_data, ignore_index=True)
 
 
 def load_afrr_data(file_path):

@@ -12,7 +12,15 @@ RAW_DATA_DIR = os.path.join(DATA_DIR, "01_raw")
 PROCESSED_DATA_DIR = os.path.join(DATA_DIR, "02_processed")
 OUTPUT_DATA_DIR = os.path.join(DATA_DIR, "03_output")
 
-# DuckDB paths - use consistent subfolder and single file
+# Provider-specific directories
+PROVIDER_RAW_DIR = os.path.join(RAW_DATA_DIR, "provider") 
+AFRR_RAW_DIR = os.path.join(RAW_DATA_DIR, "afrr")
+
+# Processed data directories
+PROCESSED_PROVIDER_DIR = os.path.join(PROCESSED_DATA_DIR, "provider")
+PROCESSED_AFRR_DIR = os.path.join(PROCESSED_DATA_DIR, "afrr")
+
+# DuckDB paths
 DUCKDB_DIR = os.path.join(OUTPUT_DATA_DIR, "duckdb")
 ENERGY_DB_PATH = os.path.join(DUCKDB_DIR, "energy_data.duckdb")
 
@@ -21,15 +29,18 @@ DUCKDB_PATH = ENERGY_DB_PATH
 PROVIDER_DUCKDB_PATH = ENERGY_DB_PATH
 AFRR_DUCKDB_PATH = ENERGY_DB_PATH
 
-# File paths
-AFRR_FILE_PATH = os.path.join(RAW_DATA_DIR, "testdata_aFRR_sept.csv")
-
-# Automatically discover all provider files in RAW_DATA_DIR
+# Discover provider files from the provider directory
+os.makedirs(PROVIDER_RAW_DIR, exist_ok=True)  
 PROVIDER_FILE_PATHS = [
-    os.path.join(RAW_DATA_DIR, file)
-    for file in os.listdir(RAW_DATA_DIR)
-    if file.endswith(".xlsx") or file.endswith(".csv")  # Supports both formats
+    os.path.join(PROVIDER_RAW_DIR, file)
+    for file in os.listdir(PROVIDER_RAW_DIR) 
+    if os.path.isfile(os.path.join(PROVIDER_RAW_DIR, file))
+    and (file.endswith(".xlsx") or file.endswith(".csv"))
 ]
+
+# AFRR file paths
+os.makedirs(AFRR_RAW_DIR, exist_ok=True)
+AFRR_FILE_PATH = os.path.join(AFRR_RAW_DIR, "afrr_data.csv")
 
 # Test Data directories (for unit testing)
 TEST_DATA_DIR = os.path.join(BASE_DIR, 'tests', 'tests_data')
@@ -50,3 +61,7 @@ os.makedirs(RAW_TEST_DIR, exist_ok=True)
 os.makedirs(PROCESSED_TEST_DIR, exist_ok=True)
 os.makedirs(OUTPUT_TEST_DIR, exist_ok=True)
 os.makedirs(TEST_DUCKDB_DIR, exist_ok=True)  # Create the test duckdb subfolder
+
+# Ensure these directories exist
+os.makedirs(PROCESSED_PROVIDER_DIR, exist_ok=True)
+os.makedirs(PROCESSED_AFRR_DIR, exist_ok=True)
