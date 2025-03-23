@@ -175,6 +175,9 @@ poetry.toml
 # LSP config files
 pyrightconfig.json
 
+# Exclude raw provider data (too large for regular sync)
+data/01_raw/provider/
+
 # End of https://www.toptal.com/developers/gitignore/api/python
 
 # Created by https://www.toptal.com/developers/gitignore/api/visualstudiocode

@@ -11,6 +11,7 @@ import time
 
 from hypermvp.scrapers.afrr_scraper import AFRRScraper
 from hypermvp.config import RAW_DATA_DIR
+from hypermvp.scrapers.provider_scraper import ProviderScraper
 
 def generate_date_points(start_date, end_date, increment='day'):
     """Generate dates based on the specified increment.
@@ -75,6 +76,10 @@ def main():
                       help="Time increment between processing points (default: month)")
     parser.add_argument("--scraper", choices=['afrr', 'provider', 'both'], default='afrr',
                       help="Scraper to use (default: afrr)")
+    parser.add_argument("--product", choices=['aFRR', 'mFRR', 'PRL'], default='aFRR',
+                      help="Product type for provider data (default: aFRR)")
+    parser.add_argument("--market", choices=['ENERGY', 'CAPACITY'], default='ENERGY',
+                      help="Market type for provider data (default: ENERGY)")
     
     args = parser.parse_args()
     
@@ -117,6 +122,38 @@ def main():
                 time.sleep(scraper.delay)
             except Exception as e:
                 logging.error(f"Failed to download data for {date}: {e}")
+    
+    # Run the Provider scraper
+    if args.scraper in ['provider', 'both']:
+        provider_output_dir = base_output_dir / "provider"
+        os.makedirs(provider_output_dir, exist_ok=True)
+        
+        provider_scraper = ProviderScraper(output_dir=provider_output_dir)
+        logging.info(f"Running Provider scraper for {len(process_dates)} dates")
+        
+        # Provider scraper works on monthly data
+        if args.increment != 'month':
+            logging.warning("Provider scraper works best with --increment=month, filtering dates...")
+            # Extract unique year/month combinations
+            year_months = set((d.year, d.month) for d in process_dates)
+            logging.info(f"Will download {len(year_months)} unique months")
+        else:
+            year_months = [(d.year, d.month) for d in process_dates]
+        
+        for year, month in year_months:
+            logging.info(f"Downloading provider data for {year}-{month:02d}")
+            try:
+                file_path = provider_scraper.download_monthly_data(
+                    year, month, 
+                    product=args.product, 
+                    market=args.market
+                )
+                if file_path:
+                    logging.info(f"Successfully downloaded {file_path}")
+                # Add delay between requests
+                time.sleep(provider_scraper.delay)
+            except Exception as e:
+                logging.error(f"Failed to download provider data for {year}-{month:02d}: {e}")
     
     logging.info("Scraping completed")
 
