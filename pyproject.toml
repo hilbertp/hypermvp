@@ -22,9 +22,16 @@ black = "^23.0.0"
 matplotlib = "^3.8.0"
 seaborn = "^0.13.0"
 beautifulsoup4 = "^4.13.3"
+streamlit = "^1.34.0"
+plotly = "^5.20.0"
+tqdm = "^4.66.0"
+psutil = "^5.9.0"  # For memory monitoring
 
 [tool.poetry.group.dev.dependencies]
 responses = "^0.25.7"
+
+[tool.poetry.scripts]
+run-dashboard = "hypermvp.dashboard.run:run_dashboard"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

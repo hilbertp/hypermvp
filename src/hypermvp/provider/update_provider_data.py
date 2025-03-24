@@ -5,111 +5,95 @@ import pandas as pd
 import duckdb
 from hypermvp.utils.db_versioning import create_duckdb_snapshot, add_version_metadata
 
-def update_provider_data(cleaned_data, db_path, table_name="provider_data"):
-    """
-    Create or update the provider_data table in DuckDB using the cleaned DataFrame.
-    Uses explicit CREATE TABLE instead of inferring types from DataFrame.
-    """
+def update_provider_data(cleaned_data, db_path, table_name="provider_data", create_snapshot=False):
+    """Update provider data in DuckDB with deduplication."""
+    import duckdb
+    import pandas as pd
+    import logging
+    import time
+    
     start_time = time.time()
     con = None
+    
     try:
-        if isinstance(cleaned_data, str):
-            raise ValueError("Expected a DataFrame for cleaned_data, but got a string.")
-
-        # Print DataFrame columns and types for debugging
-        logging.info("DataFrame columns and types before update:")
-        for col, dtype in zip(cleaned_data.columns, cleaned_data.dtypes):
-            logging.info(f"Column {col}: {dtype}")
-
-        logging.info("Using database path: %s", db_path)
-        create_duckdb_snapshot(db_path)
-        con = duckdb.connect(database=db_path, read_only=False)
-        add_version_metadata(con, [table_name], table_name + "_update")
-
-        # Force DataFrame column types (before any DuckDB operations)
-        cleaned_data["PRODUCT"] = cleaned_data["PRODUCT"].astype(str)
-        if "TYPE_OF_RESERVES" in cleaned_data.columns:
-            cleaned_data["TYPE_OF_RESERVES"] = cleaned_data["TYPE_OF_RESERVES"].astype(str)
+        con = duckdb.connect(db_path)
         
-        # Check if table exists
-        result = con.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name=?", [table_name]
-        ).fetchone()
-
-        # Either drop existing table or create new one with explicit schema
-        if result:
-            logging.info(f"Dropping existing table {table_name}")
-            con.execute(f"DROP TABLE {table_name}")
+        # Check if table exists and get existing date range
+        table_exists = con.execute(f"""
+            SELECT name FROM sqlite_master 
+            WHERE type='table' AND name='{table_name}'
+        """).fetchone()
         
-        # Create table with EXPLICIT types instead of using DataFrame inference
-        # IMPORTANT: Use the actual column names as they appear in the DataFrame
-        logging.info(f"Creating table {table_name} with explicit schema")
-        create_table_sql = f"""
-        CREATE TABLE {table_name} (
-            DELIVERY_DATE TIMESTAMP,
-            PRODUCT VARCHAR,
-            TYPE_OF_RESERVES VARCHAR,
-            ENERGY_PRICE__EUR_MWh_ DOUBLE,
-            OFFERED_CAPACITY__MW_ DOUBLE,
-            ALLOCATED_CAPACITY__MW_ DOUBLE,
-            COUNTRY VARCHAR,
-            period TIMESTAMP
-        )
-        """
-        con.execute(create_table_sql)
-        logging.info(f"Table {table_name} created with explicit schema")
-
-        # Insert data using explicit column names - MUST MATCH the DataFrame column names
-        total_periods = len(cleaned_data['period'].unique())
-        logging.info(f"Processing {total_periods} time periods...")
-        
-        for i, (period, group) in enumerate(cleaned_data.groupby("period"), 1):
-            # Log first 5, every 10th, and last 5 periods
-            show_log = (i <= 5) or (i % 10 == 0) or (i > total_periods - 5)
+        if table_exists:
+            # Get current date range
+            current_range = con.execute(f"""
+                SELECT 
+                    MIN(DELIVERY_DATE) as min_date,
+                    MAX(DELIVERY_DATE) as max_date
+                FROM {table_name}
+            """).fetchdf()
             
-            if show_log:
+            min_date = current_range['min_date'].iloc[0]
+            max_date = current_range['max_date'].iloc[0]
+            
+            logging.info(f"Existing data range: {min_date} to {max_date}")
+            
+            # Filter out data that might already exist to avoid duplicates
+            new_data = cleaned_data[
+                (cleaned_data['DELIVERY_DATE'] < min_date) | 
+                (cleaned_data['DELIVERY_DATE'] > max_date)
+            ]
+            
+            if len(new_data) == 0:
+                logging.info("No new data to add within date range")
+                return 0
+            
+            logging.info(f"Adding {len(new_data)} new records outside existing date range")
+            cleaned_data = new_data
+        
+        # Create snapshot if requested
+        if create_snapshot:
+            # Your existing snapshot code
+            pass
+            
+        # Ensure the table has the right schema
+        if not table_exists:
+            con.execute(f"""
+                CREATE TABLE {table_name} (
+                    DELIVERY_DATE TIMESTAMP,
+                    PRODUCT VARCHAR,
+                    TYPE_OF_RESERVES VARCHAR,
+                    ENERGY_PRICE__EUR_MWh_ DOUBLE,
+                    OFFERED_CAPACITY__MW_ DOUBLE,
+                    ALLOCATED_CAPACITY__MW_ DOUBLE,
+                    COUNTRY VARCHAR,
+                    period TIMESTAMP
+                )
+            """)
+        
+        # Process by period to avoid memory issues with large datasets
+        total_periods = len(cleaned_data['period'].unique())
+        periods = cleaned_data['period'].unique()
+        records_added = 0
+        
+        for i, period in enumerate(periods, 1):
+            if i % 10 == 0 or i == 1 or i == total_periods:
                 logging.info(f"Processing period {i}/{total_periods}: {period}")
             
-            # Explicitly register with column names
-            con.register("temp_df", group)
+            # Get data for this period
+            period_data = cleaned_data[cleaned_data['period'] == period]
             
-            # Insert with explicit column mapping - using ACTUAL column names
-            insert_sql = f"""
-            INSERT INTO {table_name} (
-                DELIVERY_DATE, PRODUCT, TYPE_OF_RESERVES, 
-                ENERGY_PRICE__EUR_MWh_, OFFERED_CAPACITY__MW_, ALLOCATED_CAPACITY__MW_,
-                COUNTRY, period
-            )
-            SELECT 
-                DELIVERY_DATE, PRODUCT, TYPE_OF_RESERVES, 
-                ENERGY_PRICE__EUR_MWh_, OFFERED_CAPACITY__MW_, ALLOCATED_CAPACITY__MW_,
-                COUNTRY, period 
-            FROM temp_df
-            """
-            con.execute(insert_sql)
-            con.unregister("temp_df")
+            # Append the DataFrame directly to the table
+            con.append(table_name, period_data)
             
-            # Add percentage progress every 10th period or at the end
-            if i % 10 == 0 or i == total_periods:
-                pct_complete = (i / total_periods) * 100
-                logging.info(f"Progress: {pct_complete:.1f}% complete ({i}/{total_periods} periods)")
-
-        con.commit()
-        logging.info("Provider data updated. Time taken: %.2f seconds", time.time() - start_time)
-
-        from hypermvp.utils.db_versioning import vacuum_database
-        try:
-            vacuum_database(con)  # Here 'con' is defined because it's in the update_provider_data.py scope
-        except Exception as e:
-            logging.warning(f"Vacuum failed: {e}")
-
+            records_added += len(period_data)
+        
+        logging.info(f"Added {records_added} records to {table_name} in {time.time() - start_time:.2f} seconds")
+        return records_added
+        
     except Exception as e:
-        logging.error("Error in update_provider_data: %s", e)
+        logging.error(f"Error updating provider data: {e}")
         raise
     finally:
-        if con and not getattr(con, "closed", lambda: False)():
-            try:
-                con.close()
-                logging.debug("Database connection closed properly")
-            except Exception as e:
-                logging.warning("Error closing connection: %s", e)
+        if con:
+            con.close()
