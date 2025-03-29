@@ -7,14 +7,34 @@ import plotly.express as px
 from datetime import datetime, timedelta
 import os
 import sys
+import json
 
 # Add the project root to the path so we can import the config
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../')))
-from hypermvp.config import ENERGY_DB_PATH
+from hypermvp.config import ENERGY_DB_PATH, ISO_DATETIME_FORMAT, ISO_DATE_FORMAT, TIME_FORMAT
 
 def connect_to_db():
-    """Connect to the DuckDB database."""
-    return duckdb.connect(ENERGY_DB_PATH)
+    """Connect to DuckDB database."""
+    try:
+        # Make sure the database file exists
+        if not os.path.exists(ENERGY_DB_PATH):
+            st.error(f"Database file not found: {ENERGY_DB_PATH}")
+            return None
+            
+        # Connect to the database
+        con = duckdb.connect(ENERGY_DB_PATH)
+        
+        # Test the connection with a simple query
+        test = con.execute("SELECT 1").fetchone()
+        if test and test[0] == 1:
+            return con
+        else:
+            st.error("Database connection test failed")
+            return None
+            
+    except Exception as e:
+        st.error(f"Error connecting to database: {e}")
+        return None
 
 def get_provider_data_summary(con):
     """Get a summary of provider data in the database."""
@@ -64,32 +84,23 @@ def get_provider_data_summary(con):
     }
 
 def get_afrr_data_summary(con):
-    """Get a summary of AFRR data in the database."""
-    # Check if table exists
-    table_exists = con.execute("""
-        SELECT name FROM sqlite_master 
-        WHERE type='table' AND name='afrr_data'
-    """).fetchone()
-    
-    if not table_exists:
-        return None
-    
-    # First, let's check the actual column names
-    columns = con.execute("PRAGMA table_info(afrr_data)").fetchdf()
-    st.write("AFRR Data Columns:", columns)
-    
-    # Get a sample to see the structure
-    sample = con.execute("SELECT * FROM afrr_data LIMIT 1").fetchdf()
-    st.write("AFRR Data Sample:", sample)
-    
-    # Based on the actual column names, adjust our queries
-    # If 'Datum' is the date column, use that instead of 'timestamp'
+    """Get summary of AFRR data."""
     try:
+        # Check if table exists
+        table_exists = con.execute("""
+            SELECT name FROM sqlite_master 
+            WHERE type='table' AND name='afrr_data'
+        """).fetchone()
+        
+        if not table_exists:
+            return None
+            
+        # Get date summary
         date_range = con.execute("""
             SELECT 
-                MIN("Datum") as min_date,
-                MAX("Datum") as max_date,
-                COUNT(DISTINCT "Datum"::DATE) as num_days,
+                MIN(STRPTIME("Datum", '%d.%m.%Y')) as min_date,
+                MAX(STRPTIME("Datum", '%d.%m.%Y')) as max_date,
+                COUNT(DISTINCT STRPTIME("Datum", '%d.%m.%Y')) as num_days,
                 COUNT(*) as total_records
             FROM afrr_data
         """).fetchdf()
@@ -97,7 +108,7 @@ def get_afrr_data_summary(con):
         # Get counts by day
         day_counts = con.execute("""
             SELECT 
-                "Datum"::DATE as date,
+                STRPTIME("Datum", '%d.%m.%Y')::DATE as date,
                 COUNT(*) as count
             FROM afrr_data
             GROUP BY date
@@ -109,8 +120,8 @@ def get_afrr_data_summary(con):
             "day_counts": day_counts
         }
     except Exception as e:
-        st.error(f"Error querying AFRR data: {e}")
-        return None
+        st.error(f"Error getting AFRR data summary: {e}")
+        return None  # Return None instead of empty DataFrame
 
 def get_marginal_price_summary(con):
     """Get a summary of marginal price data in the database."""
@@ -123,34 +134,27 @@ def get_marginal_price_summary(con):
     if not table_exists:
         return None
     
-    # First, let's check the actual column names
+    # First, check the actual column names
     columns = con.execute("PRAGMA table_info(marginal_prices)").fetchdf()
-    st.write("Marginal Prices Columns:", columns)
     
-    # Get a sample to see the structure
-    sample = con.execute("SELECT * FROM marginal_prices LIMIT 1").fetchdf()
-    st.write("Marginal Prices Sample:", sample)
+    # Try different possible column names for timestamp and price
+    possible_timestamp_cols = ["timestamp", "delivery_date", "date", "time"]
+    possible_price_cols = ["price", "marginal_price", "value"]
     
-    # Based on the sample, adjust our queries
+    timestamp_col = None
+    price_col = None
+    
+    for col in columns["name"]:
+        if col.lower() in possible_timestamp_cols:
+            timestamp_col = col
+        elif col.lower() in possible_price_cols:
+            price_col = col
+    
+    if not timestamp_col or not price_col:
+        return None
+    
+    # Now use the identified columns with proper GROUP BY
     try:
-        # Try different possible column names for timestamp and price
-        possible_timestamp_cols = ["timestamp", "delivery_date", "date", "time"]
-        possible_price_cols = ["price", "marginal_price", "value"]
-        
-        timestamp_col = None
-        price_col = None
-        
-        for col in columns["name"]:
-            if col.lower() in possible_timestamp_cols:
-                timestamp_col = col
-            elif col.lower() in possible_price_cols:
-                price_col = col
-        
-        if not timestamp_col or not price_col:
-            st.warning("Could not identify timestamp or price columns")
-            return None
-        
-        # Now use the identified columns
         date_range = con.execute(f"""
             SELECT 
                 MIN("{timestamp_col}") as min_date,
@@ -162,7 +166,7 @@ def get_marginal_price_summary(con):
             FROM marginal_prices
         """).fetchdf()
         
-        # Get counts by day
+        # Get counts by day with proper GROUP BY
         day_counts = con.execute(f"""
             SELECT 
                 "{timestamp_col}"::DATE as date,
@@ -431,7 +435,7 @@ def app():
             
             with col1:
                 st.subheader("Provider Data")
-                if provider_summary:
+                if provider_summary and not provider_summary["date_range"].empty:
                     st.metric("Total Records", f"{provider_summary['date_range']['total_records'].iloc[0]:,}")
                     st.metric("Date Range", f"{provider_summary['date_range']['min_date'].iloc[0]} to {provider_summary['date_range']['max_date'].iloc[0]}")
                     st.metric("Days with Data", provider_summary['date_range']['num_days'].iloc[0])
@@ -440,7 +444,7 @@ def app():
             
             with col2:
                 st.subheader("AFRR Data")
-                if afrr_summary:
+                if afrr_summary and not afrr_summary["date_range"].empty:
                     st.metric("Total Records", f"{afrr_summary['date_range']['total_records'].iloc[0]:,}")
                     st.metric("Date Range", f"{afrr_summary['date_range']['min_date'].iloc[0]} to {afrr_summary['date_range']['max_date'].iloc[0]}")
                     st.metric("Days with Data", afrr_summary['date_range']['num_days'].iloc[0])
@@ -449,7 +453,7 @@ def app():
             
             with col3:
                 st.subheader("Marginal Prices")
-                if mp_summary:
+                if mp_summary and not mp_summary["date_range"].empty:
                     st.metric("Total Records", f"{mp_summary['date_range']['total_records'].iloc[0]:,}")
                     st.metric("Date Range", f"{mp_summary['date_range']['min_date'].iloc[0]} to {mp_summary['date_range']['max_date'].iloc[0]}")
                     st.metric("Intervals with Prices", f"{mp_summary['date_range']['non_null_prices'].iloc[0]:,}")
@@ -461,18 +465,18 @@ def app():
             col1, col2 = st.columns(2)
             
             with col1:
-                if provider_summary:
+                if provider_summary and "day_counts" in provider_summary and not provider_summary["day_counts"].empty:
                     st.plotly_chart(plot_data_coverage(provider_summary['day_counts'], "Provider Data"), use_container_width=True)
                 else:
                     st.write("No provider data to display")
             
             with col2:
-                if afrr_summary:
+                if afrr_summary and "day_counts" in afrr_summary and not afrr_summary["day_counts"].empty:
                     st.plotly_chart(plot_data_coverage(afrr_summary['day_counts'], "AFRR Data"), use_container_width=True)
                 else:
                     st.write("No AFRR data to display")
             
-            if mp_summary:
+            if mp_summary and "day_counts" in mp_summary and not mp_summary["day_counts"].empty:
                 st.plotly_chart(plot_marginal_price_coverage(mp_summary['day_counts']), use_container_width=True)
             else:
                 st.write("No marginal price data to display")

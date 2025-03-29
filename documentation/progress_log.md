@@ -313,3 +313,5 @@
 - Compare September and October marginal price distributions
 - Enhance dashboard with comparative analytics across months
 - Implement more advanced marginal price visualization tools
+
+short term: fix dashboard afrr date and check unit test coverage

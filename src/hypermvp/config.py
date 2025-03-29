@@ -29,6 +29,46 @@ DUCKDB_PATH = ENERGY_DB_PATH
 PROVIDER_DUCKDB_PATH = ENERGY_DB_PATH
 AFRR_DUCKDB_PATH = ENERGY_DB_PATH
 
+# Date and time format configuration
+# =========================================
+# These define the standard formats used throughout the application
+# Important: Changing these may require data migration
+
+# Standard ISO formats
+ISO_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"  # YYYY-MM-DD HH:MM:SS
+ISO_DATE_FORMAT = "%Y-%m-%d"               # YYYY-MM-DD
+ISO_TIME_FORMAT = "%H:%M:%S"               # HH:MM:SS
+
+# Source-specific formats
+AFRR_DATE_FORMAT = "%d.%m.%Y"              # DD.MM.YYYY (German format used in AFRR)
+TIME_FORMAT = "%H:%M"                      # HH:MM (used for quarter-hour start/end)
+
+# Helper function for date column standardization
+def standardize_date_column(df, column, input_format=None):
+    """
+    Standardize a date column to consistent datetime format.
+    
+    Args:
+        df: DataFrame containing the date column
+        column: Name of the column to standardize
+        input_format: Optional format string if pandas can't autodetect
+        
+    Returns:
+        DataFrame with standardized date column
+    """
+    import pandas as pd
+    
+    if column not in df.columns:
+        return df
+        
+    # Convert to datetime using specified format if provided
+    if input_format:
+        df[column] = pd.to_datetime(df[column], format=input_format)
+    else:
+        df[column] = pd.to_datetime(df[column])
+        
+    return df
+
 # Discover provider files from the provider directory
 os.makedirs(PROVIDER_RAW_DIR, exist_ok=True)  
 PROVIDER_FILE_PATHS = [

@@ -2,14 +2,16 @@
 """
 Main processing workflow for energy data.
 This script:
-  1. Provider workflow: Loads XLSX files, cleans data, updates DuckDB directly.
+  1. Provider workflow: Loads XLSX files directly to DuckDB and processes in-database.
   2. AFRR workflow: Loads CSV files, cleans data, saves directly to DuckDB.
+  3. Analysis workflow: Calculates marginal prices and other analytics.
 """
 
 import argparse
 import logging
 import os
 import time
+import subprocess
 from datetime import datetime
 import pandas as pd
 import re
@@ -23,13 +25,8 @@ warnings.filterwarnings("ignore", category=UserWarning,
 from hypermvp.config import (
     DATA_DIR, RAW_DATA_DIR, PROCESSED_DATA_DIR, 
     OUTPUT_DATA_DIR, AFRR_FILE_PATH, DUCKDB_DIR,
-    AFRR_DUCKDB_PATH, PROVIDER_DUCKDB_PATH, ENERGY_DB_PATH  # Added ENERGY_DB_PATH here
+    AFRR_DUCKDB_PATH, PROVIDER_DUCKDB_PATH, ENERGY_DB_PATH
 )
-
-# Import provider modules
-from hypermvp.provider.loader import load_provider_file, load_provider_data
-from hypermvp.provider.cleaner import clean_provider_data
-from hypermvp.provider.update_provider_data import update_provider_data
 
 # Import AFRR modules
 from hypermvp.afrr.loader import load_afrr_data
@@ -44,169 +41,217 @@ logging.basicConfig(
 )
 
 def process_provider_workflow():
-    """End-to-end workflow for processing provider data."""
+    """
+    End-to-end workflow for processing provider data using direct database operations.
+    
+    This implementation follows the requirements in req_provider_flow.md, particularly
+    the critical business logic for handling anonymized bids by using date range replacement.
+    """
     try:
+        import os
+        import time
+        import glob
+        import subprocess
+        
         logging.info("=== STARTING PROVIDER WORKFLOW ===")
         start = time.time()
-
-        # LOAD PHASE: Use the loader module to read files from PROVIDER_RAW_DIR
-        load_start = time.time()
-        from hypermvp.config import PROVIDER_RAW_DIR, PROCESSED_DATA_DIR
-        import shutil
         
+        # Run the provider CLI as a module
+        from hypermvp.config import PROVIDER_RAW_DIR, ENERGY_DB_PATH
+        
+        # 1. First load the data to DuckDB
         logging.info("=" * 60)
-        logging.info("LOADING DATA")
+        logging.info("STEP 1: LOADING DATA TO DUCKDB")
         logging.info("=" * 60)
         
-        # Create processed directory for provider if it doesn't exist
+        load_cmd = [
+            "python", "-m", "hypermvp.provider.provider_cli",
+            "--load", 
+            "--dir", PROVIDER_RAW_DIR,
+            "--db", ENERGY_DB_PATH,
+            "--verbose"
+        ]
+        
+        load_result = subprocess.run(load_cmd, capture_output=True, text=True)
+        for line in load_result.stdout.splitlines():
+            logging.info(line)
+        
+        if load_result.returncode != 0:
+            for line in load_result.stderr.splitlines():
+                logging.error(line)
+            raise RuntimeError("Data loading failed")
+        
+        # 2. Analyze the raw data
+        logging.info("=" * 60)
+        logging.info("STEP 2: ANALYZING RAW DATA")
+        logging.info("=" * 60)
+        
+        analyze_cmd = [
+            "python", "-m", "hypermvp.provider.provider_cli",
+            "--analyze", 
+            "--db", ENERGY_DB_PATH,
+            "--verbose"
+        ]
+        
+        analyze_result = subprocess.run(analyze_cmd, capture_output=True, text=True)
+        for line in analyze_result.stdout.splitlines():
+            logging.info(line)
+        
+        # 3. Update the data
+        logging.info("=" * 60)
+        logging.info("STEP 3: UPDATING DATA WITH DATE RANGE HANDLING")
+        logging.info("=" * 60)
+        
+        update_cmd = [
+            "python", "-m", "hypermvp.provider.provider_cli",
+            "--update", 
+            "--db", ENERGY_DB_PATH,
+            "--verbose"
+        ]
+        
+        update_result = subprocess.run(update_cmd, capture_output=True, text=True)
+        for line in update_result.stdout.splitlines():
+            logging.info(line)
+        
+        if update_result.returncode != 0:
+            for line in update_result.stderr.splitlines():
+                logging.error(line)
+            raise RuntimeError("Data updating failed")
+        
+        # 4. Archive the processed files
+        logging.info("=" * 60)
+        logging.info("STEP 4: ARCHIVING FILES")
+        logging.info("=" * 60)
+        
         processed_provider_dir = os.path.join(PROCESSED_DATA_DIR, "provider")
         os.makedirs(processed_provider_dir, exist_ok=True)
         
-        raw_data = load_provider_data(PROVIDER_RAW_DIR)  # Use the specific directory
-        logging.info("Loaded %d records in %.2f seconds",
-                     len(raw_data), time.time() - load_start)
-
-        # After loading data, add more detailed progress info:
-        if len(raw_data) > 0:
-            logging.info(f"Loaded {len(raw_data):,} rows with columns: {', '.join(raw_data.columns.tolist())}")
-            start_date = raw_data["DELIVERY_DATE"].min()
-            end_date = raw_data["DELIVERY_DATE"].max()
-            logging.info(f"Date range: {start_date} to {end_date}")
-            
-            products = raw_data["PRODUCT"].unique().tolist()
-            logging.info(f"Products: {', '.join(products[:10])}{'...' if len(products) > 10 else ''}")
-
-        # Get the list of files that were processed
-        from hypermvp import config
-        processed_files = config.PROVIDER_FILE_PATHS  # These were the files loaded
+        archive_cmd = [
+            "python", "-m", "hypermvp.provider.provider_cli",
+            "--load", 
+            "--dir", PROVIDER_RAW_DIR,
+            "--db", ENERGY_DB_PATH,
+            "--archive",
+            "--verbose"
+        ]
         
-        # CLEAN PHASE: Clean the raw data.
-        clean_start = time.time()
-        logging.info("=" * 60)
-        logging.info("CLEANING DATA")
-        logging.info("=" * 60)
-        logging.info("Cleaning data...")
-        # Ensure clean_provider_data returns a DataFrame!
-        cleaned_data = clean_provider_data(raw_data)
-        logging.info(f"Cleaned data contains {len(cleaned_data):,} records in {time.time() - clean_start:.2f} seconds")
-
-        # Force problematic columns to strings:
-        if "TYPE_OF_RESERVES" in cleaned_data.columns:
-            cleaned_data["TYPE_OF_RESERVES"] = cleaned_data["TYPE_OF_RESERVES"].astype(str)
-
-        if "PRODUCT" in cleaned_data.columns:
-            cleaned_data["PRODUCT"] = cleaned_data["PRODUCT"].astype(str)
-
-        # (Add any other forced conversions for VARCHAR columns as needed)
-
-        # ADD PERIOD COLUMN: Ensure the table schema includes the period column.
-        cleaned_data["period"] = cleaned_data["DELIVERY_DATE"].dt.floor("4h")
-
-        # DATABASE UPDATE PHASE: Update or create the DuckDB table.
-        db_start = time.time()
-        db_path = ENERGY_DB_PATH  # Updated from PROVIDER_DUCKDB_PATH
-        logging.info("=" * 60)
-        logging.info("UPDATING DATABASE")
-        logging.info("=" * 60)
-
-        # Add this to show total time periods being processed:
-        total_periods = cleaned_data['period'].nunique()
-        logging.info(f"Updating database at {db_path} with {len(cleaned_data):,} rows across {total_periods} time periods")
-        logging.info("(Showing progress for only a subset of periods to avoid cluttering the output)")
-
-        # *** IMPORTANT: Pass the cleaned_data (a DataFrame), not RAW_DATA_DIR ***
-        update_provider_data(cleaned_data, db_path, "provider_data")
-        logging.info("Database update complete at %s in %.2f seconds",
-                     db_path, time.time() - db_start)
-
-        # After database update is complete, move the files to processed directory
-        logging.info("=" * 60)
-        logging.info("ARCHIVING FILES")
-        logging.info("=" * 60)
-        logging.info("=== MOVING PROCESSED FILES TO ARCHIVE ===")
-        for file_path in processed_files:
-            if os.path.exists(file_path):
-                file_name = os.path.basename(file_path)
-                destination = os.path.join(processed_provider_dir, file_name)
-                
-                try:
-                    shutil.move(file_path, destination)
-                    logging.info(f"✓ File moved: {file_path} → {destination}")
-                except Exception as e:
-                    logging.error(f"✗ Failed to move file: {file_path} → {destination}")
-                    logging.error(f"  Error: {str(e)}")
+        archive_result = subprocess.run(archive_cmd, capture_output=True, text=True)
+        for line in archive_result.stdout.splitlines():
+            logging.info(line)
         
-        # Count moved files
-        moved_count = sum(1 for f in processed_files if not os.path.exists(f))
-        logging.info(f"=== MOVED {moved_count}/{len(processed_files)} FILES ===")
-                    
-        logging.info("Total workflow took %.2f seconds", time.time() - start)
+        logging.info(f"Total workflow took {time.time() - start:.2f} seconds")
         logging.info("=== PROVIDER WORKFLOW COMPLETE ===")
+    
     except Exception as e:
-        logging.error("Workflow failed: %s", e)
+        logging.error(f"Workflow failed: {e}")
         raise
 
-def process_afrr_workflow():
+def process_afrr_workflow(month=None, year=None, file_path=None):
+    """
+    Process AFRR data workflow.
+    
+    Args:
+        month (int, optional): Month to process (1-12). If None, extracts from filename.
+        year (int, optional): Year to process. If None, extracts from filename.
+        file_path (str, optional): Path to AFRR file. If None, uses config AFRR_FILE_PATH.
+    """
     try:
         logging.info("=== STARTING AFRR WORKFLOW ===")
         start = time.time()
         
         # Create processed directory for AFRR if it doesn't exist
-        from hypermvp.config import AFRR_RAW_DIR, PROCESSED_DATA_DIR, AFRR_FILE_PATH
+        from hypermvp.config import AFRR_RAW_DIR, PROCESSED_DATA_DIR
         import shutil
+        import glob
         
         processed_afrr_dir = os.path.join(PROCESSED_DATA_DIR, "afrr")
         os.makedirs(processed_afrr_dir, exist_ok=True)
 
-        # LOAD PHASE
-        load_start = time.time()
-        logging.info("Loading AFRR data from %s", AFRR_FILE_PATH)
-        # Get the DataFrame directly
-        afrr_data = load_afrr_data(AFRR_FILE_PATH)
-        # Add debug prints
-        print(f"Type of afrr_data: {type(afrr_data)}")
-        if isinstance(afrr_data, tuple):
-            print(f"Tuple contents: {len(afrr_data)} items")
-            afrr_data = afrr_data[0]  # Extract just the DataFrame
-        logging.info("Loaded AFRR data in %.2f seconds", time.time() - load_start)
-
-        # CLEAN PHASE
-        clean_start = time.time()
-        cleaned_afrr_data = filter_negative_50hertz(afrr_data)
-        logging.info("Cleaned AFRR data in %.2f seconds", time.time() - clean_start)
-
-        # SAVE TO DUCKDB PHASE
-        db_start = time.time()
-        db_path = ENERGY_DB_PATH  # Updated from AFRR_DUCKDB_PATH
-        os.makedirs(os.path.dirname(AFRR_DUCKDB_PATH), exist_ok=True)
-        save_afrr_to_duckdb(cleaned_afrr_data, 9, 2024, "afrr_data", db_path)
-        logging.info("AFRR data saved to DuckDB at %s in %.2f seconds", db_path, time.time() - db_start)
-
-        # After database update is complete, move the file to processed directory
-        logging.info("=== MOVING PROCESSED FILES TO ARCHIVE ===")
-        if os.path.exists(AFRR_FILE_PATH):
-            file_name = os.path.basename(AFRR_FILE_PATH)
-            destination = os.path.join(processed_afrr_dir, file_name)
-            
-            try:
-                shutil.move(AFRR_FILE_PATH, destination)
-                logging.info(f"✓ File moved: {AFRR_FILE_PATH} → {destination}")
-            except Exception as e:
-                logging.error(f"✗ Failed to move file: {AFRR_FILE_PATH} → {destination}")
-                logging.error(f"  Error: {str(e)}")
+        # Determine which file(s) to process
+        if file_path:
+            file_paths = [file_path]
+        elif month and year:
+            # Look for files matching the pattern for specific month/year
+            pattern = os.path.join(AFRR_RAW_DIR, f"*{year}*{month:02d}*.csv")
+            file_paths = glob.glob(pattern)
+            if not file_paths:
+                logging.error(f"No AFRR files found for {year}-{month:02d}")
+                return
         else:
-            logging.warning(f"! Source file not found: {AFRR_FILE_PATH}")
+            # Process all files in the raw directory
+            file_paths = glob.glob(os.path.join(AFRR_RAW_DIR, "*.csv"))
+            if not file_paths:
+                logging.error(f"No AFRR files found in {AFRR_RAW_DIR}")
+                return
+
+        logging.info(f"Found {len(file_paths)} AFRR file(s) to process")
         
-        # Verify the move
-        if not os.path.exists(AFRR_FILE_PATH) and os.path.exists(os.path.join(processed_afrr_dir, file_name)):
-            logging.info("=== FILE SUCCESSFULLY ARCHIVED ===")
-        else:
-            logging.warning("=== FILE ARCHIVING INCOMPLETE ===")
+        # Process each file
+        for current_file_path in file_paths:
+            file_name = os.path.basename(current_file_path)
+            logging.info(f"Processing file: {file_name}")
+            
+            # Extract month and year from filename if not provided
+            if not (month and year):
+                # Try to extract date info from filename
+                # Assuming format like: ReglerleistungAbrufDeutschland_2024_09.csv
+                match = re.search(r'(\d{4})_(\d{2})', file_name)
+                if match:
+                    extracted_year = int(match.group(1))
+                    extracted_month = int(match.group(2))
+                    logging.info(f"Extracted date: {extracted_year}-{extracted_month:02d}")
+                else:
+                    logging.warning(f"Could not extract date from filename: {file_name}")
+                    # Use current month/year as fallback
+                    now = datetime.now()
+                    extracted_month = now.month
+                    extracted_year = now.year
+            else:
+                extracted_month = month
+                extracted_year = year
+
+            # LOAD PHASE
+            load_start = time.time()
+            logging.info(f"Loading AFRR data from {current_file_path}")
+            # Get the DataFrame directly
+            afrr_data = load_afrr_data(current_file_path)
+            # Add debug prints
+            if isinstance(afrr_data, tuple):
+                afrr_data = afrr_data[0]  # Extract just the DataFrame
+            logging.info(f"Loaded AFRR data with {len(afrr_data)} rows in {time.time() - load_start:.2f} seconds")
+
+            # CLEAN PHASE
+            clean_start = time.time()
+            cleaned_afrr_data = filter_negative_50hertz(afrr_data)
+            logging.info(f"Cleaned AFRR data ({len(cleaned_afrr_data)} rows) in {time.time() - clean_start:.2f} seconds")
+
+            # SAVE TO DUCKDB PHASE
+            db_start = time.time()
+            db_path = ENERGY_DB_PATH  # Updated from AFRR_DUCKDB_PATH
+            os.makedirs(os.path.dirname(db_path), exist_ok=True)
+            
+            # Save with extracted month and year
+            save_afrr_to_duckdb(cleaned_afrr_data, extracted_month, extracted_year, "afrr_data", db_path)
+            logging.info(f"AFRR data saved to DuckDB at {db_path} for {extracted_year}-{extracted_month:02d} in {time.time() - db_start:.2f} seconds")
+
+            # After database update is complete, move the file to processed directory
+            logging.info("=== MOVING PROCESSED FILE TO ARCHIVE ===")
+            if os.path.exists(current_file_path):
+                destination = os.path.join(processed_afrr_dir, file_name)
                 
-        logging.info("Total workflow took %.2f seconds", time.time() - start)
+                try:
+                    shutil.move(current_file_path, destination)
+                    logging.info(f"✓ File moved: {current_file_path} → {destination}")
+                except Exception as e:
+                    logging.error(f"✗ Failed to move file: {current_file_path} → {destination}")
+                    logging.error(f"  Error: {str(e)}")
+            else:
+                logging.warning(f"! Source file not found: {current_file_path}")
+        
+        logging.info(f"Total workflow took {time.time() - start:.2f} seconds")
         logging.info("=== AFRR WORKFLOW COMPLETE ===")
     except Exception as e:
-        logging.error("Workflow failed: %s", e)
+        logging.error(f"Workflow failed: {str(e)}")
         raise
 
 def process_analysis_workflow(start_date="2024-09-01", end_date=None):
@@ -227,7 +272,6 @@ def process_analysis_workflow(start_date="2024-09-01", end_date=None):
     logging.info("Total analysis took %.2f seconds", time.time() - start)
     logging.info("=== ANALYSIS WORKFLOW COMPLETE ===")
 
-# Fix the main() function to handle all workflow options:
 def main():
     # Setup command-line argument parsing
     parser = argparse.ArgumentParser(
@@ -236,9 +280,21 @@ def main():
     )
     parser.add_argument(
         "--workflow",
-        choices=["provider", "afrr", "analysis", "all"],  # This line needs the updated choices
+        choices=["provider", "afrr", "analysis", "all", "visualize"],
         default="provider",
         help="Select processing workflow"
+    )
+    parser.add_argument(
+        "--month",
+        type=int,
+        help="Month to process (1-12)",
+        default=None
+    )
+    parser.add_argument(
+        "--year",
+        type=int,
+        help="Year to process (e.g., 2024)",
+        default=None
     )
     parser.add_argument(
         "--start-date",
@@ -250,6 +306,11 @@ def main():
         default=None,
         help="End date for analysis (YYYY-MM-DD)"
     )
+    parser.add_argument(
+        "--file",
+        help="Specific file to process (for AFRR workflow)",
+        default=None
+    )
     
     args = parser.parse_args()
     logging.info("Starting %s workflow", args.workflow.upper())
@@ -257,14 +318,13 @@ def main():
     if args.workflow == "provider":
         process_provider_workflow()
     elif args.workflow == "afrr":
-        process_afrr_workflow()
+        process_afrr_workflow(args.month, args.year, args.file)
     elif args.workflow == "analysis":
         process_analysis_workflow(args.start_date, args.end_date)
     elif args.workflow == "all":
         process_provider_workflow()
-        process_afrr_workflow()
+        process_afrr_workflow(args.month, args.year, args.file)
         process_analysis_workflow(args.start_date, args.end_date)
-    # Optional enhancement (not required)
     elif args.workflow == "visualize":
         from hypermvp.analysis.plot_marginal_prices import plot_marginal_prices
         plot_marginal_prices(args.start_date)

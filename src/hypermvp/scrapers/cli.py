@@ -10,7 +10,13 @@ import calendar
 import time
 
 from hypermvp.scrapers.afrr_scraper import AFRRScraper
-from hypermvp.config import RAW_DATA_DIR
+from hypermvp.config import (
+    RAW_DATA_DIR,
+    ISO_DATETIME_FORMAT,
+    ISO_DATE_FORMAT,
+    TIME_FORMAT,
+    AFRR_DATE_FORMAT
+)
 from hypermvp.scrapers.provider_scraper import ProviderScraper
 
 def generate_date_points(start_date, end_date, increment='day'):
@@ -24,11 +30,12 @@ def generate_date_points(start_date, end_date, increment='day'):
     Returns:
         List of dates to process
     """
+    # MODIFIED: Use ISO_DATE_FORMAT instead of hardcoded "%Y-%m-%d"
     if isinstance(start_date, str):
-        start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
+        start_date = datetime.strptime(start_date, ISO_DATE_FORMAT).date()
     
     if isinstance(end_date, str):
-        end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
+        end_date = datetime.strptime(end_date, ISO_DATE_FORMAT).date()
     
     dates = []
     
@@ -96,7 +103,10 @@ def main():
     # Generate processing dates based on increment
     process_dates = generate_date_points(args.start_date, end_date, args.increment)
     
-    logging.info(f"Will process {len(process_dates)} dates between {args.start_date} and {end_date}")
+    # MODIFIED: Use standardized date formatting for logging
+    logging.info(f"Will process {len(process_dates)} dates between "
+                f"{process_dates[0].strftime(ISO_DATE_FORMAT)} and "
+                f"{process_dates[-1].strftime(ISO_DATE_FORMAT)}")
     
     # Set output directory
     if args.output_dir:
@@ -114,14 +124,16 @@ def main():
         
         results = []
         for date in process_dates:
-            logging.info(f"Processing date: {date}")
+            # MODIFIED: Use standardized date formatting in logs
+            logging.info(f"Processing date: {date.strftime(ISO_DATE_FORMAT)}")
             try:
                 result = scraper.download_date(date)
                 results.append(result)
                 # Add delay between requests
                 time.sleep(scraper.delay)
             except Exception as e:
-                logging.error(f"Failed to download data for {date}: {e}")
+                # MODIFIED: Use standardized date formatting in logs
+                logging.error(f"Failed to download data for {date.strftime(ISO_DATE_FORMAT)}: {e}")
     
     # Run the Provider scraper
     if args.scraper in ['provider', 'both']:
@@ -141,7 +153,9 @@ def main():
             year_months = [(d.year, d.month) for d in process_dates]
         
         for year, month in year_months:
-            logging.info(f"Downloading provider data for {year}-{month:02d}")
+            # MODIFIED: Use standardized date formatting
+            month_date = datetime(year, month, 1)
+            logging.info(f"Downloading provider data for {month_date.strftime('%Y-%m')}")
             try:
                 file_path = provider_scraper.download_monthly_data(
                     year, month, 
@@ -153,9 +167,11 @@ def main():
                 # Add delay between requests
                 time.sleep(provider_scraper.delay)
             except Exception as e:
-                logging.error(f"Failed to download provider data for {year}-{month:02d}: {e}")
+                # MODIFIED: Use standardized date formatting
+                logging.error(f"Failed to download provider data for {month_date.strftime('%Y-%m')}: {e}")
     
-    logging.info("Scraping completed")
+    # MODIFIED: Add ISO timestamp to completion message
+    logging.info(f"Scraping completed at {datetime.now().strftime(ISO_DATETIME_FORMAT)}")
 
 if __name__ == "__main__":
     main()

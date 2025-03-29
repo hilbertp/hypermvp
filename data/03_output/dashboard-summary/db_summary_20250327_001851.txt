@@ -1,0 +1,247 @@
+DATABASE SUMMARY - 2025-03-27 00:18:51
+Database file: /home/philly/hypermvp/data/03_output/duckdb/energy_data.duckdb
+Database size: 15.51 MB
+
+Tables in database: afrr_data, marginal_prices, provider_data, version_history
+
+=== TABLE: afrr_data ===
+COLUMNS:
+  Datum (VARCHAR)
+  von (VARCHAR)
+  bis (VARCHAR)
+  50Hertz (Negativ) (VARCHAR)
+  month (BIGINT)
+  year (BIGINT)
+ROWS: 2,880
+SAMPLE DATA:
+  COLUMNS: Datum, von, bis, 50Hertz (Negativ), month, year
+
+  ROW 1:
+    Datum: 01.09.2024
+    von: 00:00
+    bis: 00:15
+    50Hertz (Negativ): 4,364
+    month: 9
+    year: 2024
+
+  ROW 2:
+    Datum: 01.09.2024
+    von: 00:15
+    bis: 00:30
+    50Hertz (Negativ): 10,052
+    month: 9
+    year: 2024
+
+  ROW 3:
+    Datum: 01.09.2024
+    von: 00:30
+    bis: 00:45
+    50Hertz (Negativ): 53,048
+    month: 9
+    year: 2024
+
+  ROW 4:
+    Datum: 01.09.2024
+    von: 00:45
+    bis: 01:00
+    50Hertz (Negativ): 118,184
+    month: 9
+    year: 2024
+
+  ROW 5:
+    Datum: 01.09.2024
+    von: 01:00
+    bis: 01:15
+    50Hertz (Negativ): 41,140
+    month: 9
+    year: 2024
+
+
+==================================================
+
+=== TABLE: marginal_prices ===
+COLUMNS:
+  date (DATE)
+  timestamp (TIMESTAMP)
+  quarter_hour_start (VARCHAR)
+  quarter_hour_end (VARCHAR)
+  activated_volume_mw (DOUBLE)
+  available_capacity_mw (DOUBLE)
+  marginal_price (DOUBLE)
+  product_code (VARCHAR)
+ROWS: 1,604
+DATE RANGE: 2024-09-01 00:00:00 to 2024-09-30 00:00:00
+SAMPLE DATA:
+  COLUMNS: date, timestamp, quarter_hour_start, quarter_hour_end, activated_volume_mw, available_capacity_mw, marginal_price, product_code
+
+  ROW 1:
+    date: 2024-09-01 00:00:00
+    timestamp: 2024-09-01 00:00:00
+    quarter_hour_start: 00:00
+    quarter_hour_end: 00:15
+    activated_volume_mw: 4.364
+    available_capacity_mw: 6.0
+    marginal_price: -44.74
+    product_code: NEG_001
+
+  ROW 2:
+    date: 2024-09-01 00:00:00
+    timestamp: 2024-09-01 00:15:00
+    quarter_hour_start: 00:15
+    quarter_hour_end: 00:30
+    activated_volume_mw: 10.052
+    available_capacity_mw: 11.0
+    marginal_price: -38.58
+    product_code: NEG_002
+
+  ROW 3:
+    date: 2024-09-01 00:00:00
+    timestamp: 2024-09-01 00:30:00
+    quarter_hour_start: 00:30
+    quarter_hour_end: 00:45
+    activated_volume_mw: 53.048
+    available_capacity_mw: 58.0
+    marginal_price: -1.04
+    product_code: NEG_003
+
+  ROW 4:
+    date: 2024-09-01 00:00:00
+    timestamp: 2024-09-01 00:45:00
+    quarter_hour_start: 00:45
+    quarter_hour_end: 01:00
+    activated_volume_mw: 118.184
+    available_capacity_mw: 121.0
+    marginal_price: 48.0
+    product_code: NEG_004
+
+  ROW 5:
+    date: 2024-09-01 00:00:00
+    timestamp: 2024-09-01 01:00:00
+    quarter_hour_start: 01:00
+    quarter_hour_end: 01:15
+    activated_volume_mw: 41.14
+    available_capacity_mw: 44.0
+    marginal_price: 18.61
+    product_code: NEG_005
+
+
+==================================================
+
+=== TABLE: provider_data ===
+COLUMNS:
+  DELIVERY_DATE (TIMESTAMP)
+  PRODUCT (VARCHAR)
+  TYPE_OF_RESERVES (VARCHAR)
+  ENERGY_PRICE__EUR_MWh_ (DOUBLE)
+  OFFERED_CAPACITY__MW_ (DOUBLE)
+  ALLOCATED_CAPACITY__MW_ (DOUBLE)
+  COUNTRY (VARCHAR)
+  period (TIMESTAMP)
+ROWS: 1,827,897
+DATE RANGE: 2024-09-01 00:00:00 to 2024-09-30 00:00:00
+SAMPLE DATA:
+  COLUMNS: DELIVERY_DATE, PRODUCT, TYPE_OF_RESERVES, ENERGY_PRICE__EUR_MWh_, OFFERED_CAPACITY__MW_, ALLOCATED_CAPACITY__MW_, COUNTRY, period
+
+  ROW 1:
+    DELIVERY_DATE: 2024-09-01 00:00:00
+    PRODUCT: NEG_001
+    TYPE_OF_RESERVES: aFRR
+    ENERGY_PRICE__EUR_MWh_: -48.34
+    OFFERED_CAPACITY__MW_: 1.0
+    ALLOCATED_CAPACITY__MW_: 1.0
+    COUNTRY: DE
+    period: 2024-09-01 00:00:00
+
+  ROW 2:
+    DELIVERY_DATE: 2024-09-01 00:00:00
+    PRODUCT: NEG_001
+    TYPE_OF_RESERVES: aFRR
+    ENERGY_PRICE__EUR_MWh_: -44.74
+    OFFERED_CAPACITY__MW_: 5.0
+    ALLOCATED_CAPACITY__MW_: 5.0
+    COUNTRY: DE
+    period: 2024-09-01 00:00:00
+
+  ROW 3:
+    DELIVERY_DATE: 2024-09-01 00:00:00
+    PRODUCT: NEG_001
+    TYPE_OF_RESERVES: aFRR
+    ENERGY_PRICE__EUR_MWh_: -39.11
+    OFFERED_CAPACITY__MW_: 5.0
+    ALLOCATED_CAPACITY__MW_: 5.0
+    COUNTRY: DE
+    period: 2024-09-01 00:00:00
+
+  ROW 4:
+    DELIVERY_DATE: 2024-09-01 00:00:00
+    PRODUCT: NEG_001
+    TYPE_OF_RESERVES: aFRR
+    ENERGY_PRICE__EUR_MWh_: -38.58
+    OFFERED_CAPACITY__MW_: 5.0
+    ALLOCATED_CAPACITY__MW_: 5.0
+    COUNTRY: DE
+    period: 2024-09-01 00:00:00
+
+  ROW 5:
+    DELIVERY_DATE: 2024-09-01 00:00:00
+    PRODUCT: NEG_001
+    TYPE_OF_RESERVES: aFRR
+    ENERGY_PRICE__EUR_MWh_: -35.11
+    OFFERED_CAPACITY__MW_: 2.0
+    ALLOCATED_CAPACITY__MW_: 2.0
+    COUNTRY: DE
+    period: 2024-09-01 00:00:00
+
+
+==================================================
+
+=== TABLE: version_history ===
+COLUMNS:
+  version_id (INTEGER)
+  timestamp (TIMESTAMP)
+  operation_type (VARCHAR)
+  source_files (VARCHAR)
+  username (VARCHAR)
+ROWS: 6
+DATE RANGE: 2025-03-18 22:52:22.140913 to 2025-03-27 00:03:36.485669
+SAMPLE DATA:
+  COLUMNS: version_id, timestamp, operation_type, source_files, username
+
+  ROW 1:
+    version_id: 1
+    timestamp: 2025-03-18 22:52:22.140913
+    operation_type: provider_data_update
+    source_files: ['provider_data']
+    username: philly
+
+  ROW 2:
+    version_id: 2
+    timestamp: 2025-03-18 22:52:22.712289
+    operation_type: afrr_update_9_2024
+    source_files: ['/home/philly/hypermvp/data/01_raw/testdata_aFRR_sept.csv']
+    username: philly
+
+  ROW 3:
+    version_id: 3
+    timestamp: 2025-03-23 19:37:18.855553
+    operation_type: provider_data_update
+    source_files: ['provider_data']
+    username: philly
+
+  ROW 4:
+    version_id: 4
+    timestamp: 2025-03-23 19:40:43.305558
+    operation_type: provider_data_update
+    source_files: ['provider_data']
+    username: philly
+
+  ROW 5:
+    version_id: 5
+    timestamp: 2025-03-23 20:21:05.214245
+    operation_type: provider_data_update
+    source_files: ['provider_data']
+    username: philly
+
+
+==================================================
+

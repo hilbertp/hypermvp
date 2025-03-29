@@ -2,208 +2,341 @@ import pandas as pd
 import duckdb
 import logging
 from datetime import datetime, timedelta, date
-from hypermvp.config import ENERGY_DB_PATH
+# Add standardized date format imports
+from hypermvp.config import ENERGY_DB_PATH, ISO_DATETIME_FORMAT, ISO_DATE_FORMAT, TIME_FORMAT, AFRR_DATE_FORMAT
 
-def calculate_marginal_prices(start_date, end_date=None, db_path=ENERGY_DB_PATH):
+def calculate_marginal_prices(start_date=None, end_date=None):
     """
-    Calculate marginal prices for a date range.
+    Calculate marginal prices for the given date range.
     
     Args:
-        start_date: Start date (datetime.date or string YYYY-MM-DD)
-        end_date: End date, inclusive (datetime.date or string YYYY-MM-DD). If None, use start_date.
-        db_path: Path to DuckDB database
-        
+        start_date (str or datetime): Start date in YYYY-MM-DD format. If None, use the earliest date in the DB.
+        end_date (str or datetime): End date in YYYY-MM-DD format. If None, use today's date.
+    
     Returns:
-        DataFrame with columns: timestamp, quarter_hour_start, quarter_hour_end, activated_volume_mw, marginal_price
+        pd.DataFrame: DataFrame with marginal prices for each 15-minute interval.
     """
-    # Handle date parameters
+    import duckdb
+    import pandas as pd
+    from datetime import datetime, timedelta
+    import logging
+    
+    # Connect to DB
+    from hypermvp.config import ENERGY_DB_PATH
+    con = duckdb.connect(ENERGY_DB_PATH)
+    
+    # Convert string dates to datetime objects if needed
     if isinstance(start_date, str):
-        start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
+        start_date = datetime.strptime(start_date, ISO_DATE_FORMAT).date()
+    if isinstance(end_date, str) and end_date:
+        end_date = datetime.strptime(end_date, ISO_DATE_FORMAT).date()  # Changed to ISO_DATE_FORMAT
+    elif not end_date:
+        end_date = datetime.now().date()
+        
+    # Make end_date inclusive of the entire day
+    end_date = end_date + timedelta(days=1) - timedelta(microseconds=1)
     
-    if end_date is None:
-        end_date = start_date
-    elif isinstance(end_date, str):
-        end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
+    # Check if AFRR data exists for the date range
+    afrr_data_exists = con.execute("""
+        SELECT COUNT(*) 
+        FROM afrr_data 
+        WHERE STRPTIME("Datum", ?) ::DATE BETWEEN ? AND ?
+    """, [AFRR_DATE_FORMAT, start_date, end_date]).fetchone()[0]  # Changed to AFRR_DATE_FORMAT
     
-    logging.info(f"Calculating marginal prices from {start_date} to {end_date}")
+    if afrr_data_exists == 0:
+        logging.warning(f"No AFRR data found for date range {start_date} to {end_date}")
+        return pd.DataFrame()
     
-    # Connect to database
-    conn = duckdb.connect(db_path)
+    # Get all unique days in the AFRR data
+    days = con.execute("""
+        SELECT DISTINCT STRPTIME("Datum", ?)::DATE as date
+        FROM afrr_data
+        WHERE STRPTIME("Datum", ?)::DATE BETWEEN ? AND ?
+        ORDER BY date
+    """, [AFRR_DATE_FORMAT, AFRR_DATE_FORMAT, start_date, end_date]).fetchdf()  # Changed to AFRR_DATE_FORMAT
+    
+    if days.empty:
+        logging.warning(f"No days found for date range {start_date} to {end_date}")
+        return pd.DataFrame()
+    
+    # Initialize results DataFrame
     results = []
     
-    try:
-        # Check if required tables exist
-        tables = conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
-        table_names = [t[0] for t in tables]
+    # Process each day
+    for _, row in days.iterrows():
+        day = row['date']
         
-        if "provider_data" not in table_names or "afrr_data" not in table_names:
-            logging.error("Required tables not found in database")
-            return pd.DataFrame()
+        # Convert day to German format for AFRR data query
+        german_date_str = day.strftime(AFRR_DATE_FORMAT)  # Changed to AFRR_DATE_FORMAT
         
-        # Format dates to match German format in the database
-        start_date_formatted = start_date.strftime("%d.%m.%Y") if isinstance(start_date, date) else datetime.strptime(start_date, "%Y-%m-%d").strftime("%d.%m.%Y")
-        end_date_formatted = end_date.strftime("%d.%m.%Y") if isinstance(end_date, date) else datetime.strptime(end_date, "%Y-%m-%d").strftime("%d.%m.%Y")
+        # Get all 15-minute intervals for this day
+        intervals = con.execute("""
+            SELECT 
+                "Datum",
+                "von" as quarter_hour_start,
+                "bis" as quarter_hour_end,
+                CAST(REPLACE("50Hertz (Negativ)", ',', '.') AS DOUBLE) as activated_volume_mw
+            FROM afrr_data
+            WHERE "Datum" = ?
+            ORDER BY "von"
+        """, [german_date_str]).fetchdf()
         
-        # Get all 15-minute intervals in date range from aFRR data - using string comparison
-        intervals_query = f"""
-        SELECT 
-            Datum AS date,
-            von AS quarter_hour_start,  -- Previously interval_start
-            bis AS quarter_hour_end,    -- Previously interval_end
-            CAST(REPLACE("50Hertz (Negativ)", ',', '.') AS DOUBLE) AS total_activated_mw
-        FROM afrr_data
-        WHERE Datum BETWEEN '{start_date_formatted}' AND '{end_date_formatted}'
-        ORDER BY Datum, von
-        """
-        
-        intervals = conn.execute(intervals_query).fetchdf()
-        if len(intervals) == 0:
-            logging.warning(f"No aFRR data found for date range {start_date} to {end_date}")
-            return pd.DataFrame()
-            
-        logging.info(f"Found {len(intervals)} intervals in date range")
+        if intervals.empty:
+            logging.warning(f"No intervals found for day {day}")
+            continue
         
         # For each interval, calculate the marginal price
-        for idx, row in intervals.iterrows():
-            # Get quarter-hour interval date and time
-            interval_date = row['date'] if isinstance(row['date'], date) else datetime.strptime(row['date'], "%d.%m.%Y").date()
-            interval_time = datetime.strptime(row['quarter_hour_start'], "%H:%M").time()
-            quarter_hour_datetime = datetime.combine(interval_date, interval_time)
+        for _, interval in intervals.iterrows():
+            # Get start and end time
+            start_time = interval['quarter_hour_start']
+            end_time = interval['quarter_hour_end']
+            activated_volume = interval['activated_volume_mw']
             
-            # Calculate the quarter-hour index
-            hour = quarter_hour_datetime.hour
-            minute = quarter_hour_datetime.minute
-            quarter_hour_index = hour * 4 + (minute // 15) + 1  # 1-based index from 001 to 096
-            product_code = f"NEG_{quarter_hour_index:03d}"
+            # Calculate product code (e.g., NEG_001 for 00:00-00:15)
+            # Maps time to sequential number (00:00-00:15 -> 1, 00:15-00:30 -> 2, etc.)
+            hour, minute = map(int, start_time.split(':'))
+            sequential_number = hour * 4 + (minute // 15) + 1
+            product_code = f"NEG_{sequential_number:03d}"
             
-            # Check for no activation - instead of skipping, record as NIL
-            if float(row['total_activated_mw']) <= 0:
-                logging.debug(f"Interval {row['date']} {row['quarter_hour_start']} has no activation")
+            # Skip if activated volume is 0 or very small
+            if abs(activated_volume) < 0.001:
+                # Still add a row, but with null marginal price
                 results.append({
-                    'date': interval_date,
-                    'timestamp': quarter_hour_datetime,
-                    'quarter_hour_start': row['quarter_hour_start'],
-                    'quarter_hour_end': row['quarter_hour_end'],
-                    'activated_volume_mw': 0.0,
-                    'available_capacity_mw': 0.0,
-                    'marginal_price': None,  # SQL NULL value for "NIL"
+                    'date': day,
+                    'timestamp': datetime.combine(day, datetime.strptime(start_time, TIME_FORMAT).time()),  # Changed to TIME_FORMAT
+                    'quarter_hour_start': start_time,
+                    'quarter_hour_end': end_time,
+                    'activated_volume_mw': activated_volume,
+                    'available_capacity_mw': 0,
+                    'marginal_price': None,
                     'product_code': product_code
                 })
                 continue
-                
-            # Query provider offers for this specific 15-minute product code
-            offers_query = f"""
-            SELECT 
-                DELIVERY_DATE,
-                PRODUCT,
-                TYPE_OF_RESERVES,
-                ENERGY_PRICE__EUR_MWh_ AS price,
-                ALLOCATED_CAPACITY__MW_ AS capacity
-            FROM provider_data
-            WHERE DELIVERY_DATE = '{interval_date.strftime("%Y-%m-%d")}'
-              AND PRODUCT = '{product_code}'  -- Match the exact 15-minute product code
-            ORDER BY price ASC  -- Sort by price ascending (for negative aFRR)
-            """
             
-            offers = conn.execute(offers_query).fetchdf()
-            if len(offers) == 0:
-                logging.warning(f"No provider offers for quarter-hour interval {quarter_hour_datetime.strftime('%Y-%m-%d %H:%M')} (product {product_code}) - skipping")
-                continue
+            # Replace the offers query and handling section (around line 108) with this more robust approach:
+
+            # First, try exact product code match
+            offers = con.execute("""
+                SELECT 
+                    ENERGY_PRICE__EUR_MWh_ as energy_price,
+                    OFFERED_CAPACITY__MW_ as capacity
+                FROM provider_data
+                WHERE DELIVERY_DATE::DATE = ?
+                  AND PRODUCT = ?
+                ORDER BY ENERGY_PRICE__EUR_MWh_ ASC
+            """, [day, product_code]).fetchdf()
+
+            # If no results, try a more flexible match
+            if offers.empty:
+                # Try alternative naming patterns common in energy markets
+                alternative_product_codes = [
+                    product_code,                    # NEG_001
+                    product_code.replace('_', '-'),  # NEG-001
+                    product_code.replace('_', ''),   # NEG001
+                    product_code.lower(),            # neg_001
+                    f"NEG_{sequential_number}",      # NEG_1 (without leading zeros)
+                    f"NEG{sequential_number:03d}"    # NEG001 (without underscore)
+                ]
                 
-            # Apply merit order principle to find marginal price
-            activated_volume = float(row['total_activated_mw'])  # Ensure numeric conversion
-            accumulated_capacity = 0
+                # Create a query with multiple OR conditions for product codes
+                placeholder_list = ', '.join(['?'] * len(alternative_product_codes))
+                query = f"""
+                    SELECT 
+                        ENERGY_PRICE__EUR_MWh_ as energy_price,
+                        OFFERED_CAPACITY__MW_ as capacity
+                    FROM provider_data
+                    WHERE DELIVERY_DATE::DATE = ?
+                      AND PRODUCT IN ({placeholder_list})
+                    ORDER BY ENERGY_PRICE__EUR_MWh_ ASC
+                """
+                
+                # Parameters: first the date, then all the alternative product codes
+                params = [day] + alternative_product_codes
+                
+                # Try the flexible match query
+                offers = con.execute(query, params).fetchdf()
+                
+                # If still no results, try an even more flexible approach using wildcard matching
+                if offers.empty:
+                    # Extract the numeric part (e.g., '001' from 'NEG_001')
+                    product_num = product_code.split('_')[1] if '_' in product_code else product_code[3:]
+                    
+                    offers = con.execute("""
+                        SELECT 
+                            ENERGY_PRICE__EUR_MWh_ as energy_price,
+                            OFFERED_CAPACITY__MW_ as capacity
+                        FROM provider_data
+                        WHERE DELIVERY_DATE::DATE = ?
+                          AND (
+                              PRODUCT LIKE 'NEG%' || ? 
+                              OR PRODUCT LIKE 'neg%' || ?
+                          )
+                        ORDER BY ENERGY_PRICE__EUR_MWh_ ASC
+                    """, [day, product_num, product_num]).fetchdf()
+                    
+                    if not offers.empty:
+                        found_product = con.execute("""
+                            SELECT DISTINCT PRODUCT
+                            FROM provider_data
+                            WHERE DELIVERY_DATE::DATE = ?
+                              AND (
+                                  PRODUCT LIKE 'NEG%' || ? 
+                                  OR PRODUCT LIKE 'neg%' || ?
+                              )
+                            LIMIT 1
+                        """, [day, product_num, product_num]).fetchone()[0]
+                        
+                        logging.info(f"Found alternative product format: {found_product} for requested {product_code}")
+                
+                # If still no results, try looking at all products for this day to see patterns
+                if offers.empty:
+                    # Add diagnostic query to check product existence
+                    all_products = con.execute("""
+                        SELECT DISTINCT PRODUCT 
+                        FROM provider_data
+                        WHERE DELIVERY_DATE::DATE = ?
+                        ORDER BY PRODUCT
+                    """, [day]).fetchdf()
+                    
+                    if not all_products.empty:
+                        neg_products = all_products[all_products['PRODUCT'].str.contains('NEG|neg', regex=True)]
+                        if not neg_products.empty:
+                            # Log the first few NEG products to help identify pattern
+                            sample_products = neg_products['PRODUCT'].head(min(5, len(neg_products))).tolist()
+                            logging.warning(f"No provider offers found for day {day}, product {product_code}")
+                            logging.info(f"Available NEG products for this day: {', '.join(sample_products)}")
+                        else:
+                            logging.warning(f"No NEG products found for day {day}")
+                    else:
+                        logging.warning(f"No provider data found for day {day}")
+                    
+                    # Add a row with null marginal price
+                    results.append({
+                        'date': day,
+                        'timestamp': datetime.combine(day, datetime.strptime(start_time, TIME_FORMAT).time()),  # Changed to TIME_FORMAT
+                        'quarter_hour_start': start_time,
+                        'quarter_hour_end': end_time,
+                        'activated_volume_mw': activated_volume,
+                        'available_capacity_mw': 0,
+                        'marginal_price': None,
+                        'product_code': product_code
+                    })
+                    continue
+            
+            # Calculate available capacity
+            available_capacity = offers['capacity'].sum()
+            
+            # If activated volume exceeds available capacity, log warning
+            if activated_volume > available_capacity:
+                logging.warning(f"Activated volume ({activated_volume} MW) exceeds available capacity ({available_capacity} MW) for {day}, {product_code}")
+                
+            # Calculate the marginal price using the merit order
+            cumulative_capacity = 0
             marginal_price = None
             
             for _, offer in offers.iterrows():
-                accumulated_capacity += offer['capacity']
-                # Update marginal price with each offer we need
-                marginal_price = offer['price']
-                
-                # Stop when we've reached the required volume
-                if accumulated_capacity >= activated_volume:
+                cumulative_capacity += offer['capacity']
+                if cumulative_capacity >= activated_volume:
+                    marginal_price = offer['energy_price']
                     break
             
-            # Record the result
+            # Add the results
             results.append({
-                'date': interval_date,
-                'timestamp': quarter_hour_datetime,
-                'quarter_hour_start': row['quarter_hour_start'],  # Changed from interval_start
-                'quarter_hour_end': row['quarter_hour_end'],      # Changed from interval_end
+                'date': day,
+                'timestamp': datetime.combine(day, datetime.strptime(start_time, TIME_FORMAT).time()),  # Changed to TIME_FORMAT
+                'quarter_hour_start': start_time,
+                'quarter_hour_end': end_time,
                 'activated_volume_mw': activated_volume,
-                'available_capacity_mw': accumulated_capacity,
+                'available_capacity_mw': available_capacity,
                 'marginal_price': marginal_price,
-                'product_code': product_code  # Store the 15-minute product code
+                'product_code': product_code
             })
-            
-            # Progress indicator for large calculations
-            if idx > 0 and idx % 100 == 0:
-                logging.info(f"Processed {idx} of {len(intervals)} intervals...")
+    
+    # Close the connection
+    con.close()
+    
+    # Convert results to DataFrame
+    results_df = pd.DataFrame(results)
+    
+    if not results_df.empty:
+        # Count non-null prices
+        non_null_prices = results_df['marginal_price'].dropna()
         
-        # Convert results to DataFrame
-        if not results:
-            logging.warning("No marginal prices could be calculated")
-            return pd.DataFrame()
-            
-        return pd.DataFrame(results)
+        # Log some statistics
+        logging.info(f"Calculated {len(results_df)} marginal prices")
+        logging.info(f"Prices available for {len(non_null_prices)} intervals ({len(non_null_prices)/len(results_df)*100:.1f}%)")
         
-    finally:
-        conn.close()
+        if len(non_null_prices) > 0:
+            logging.info(f"Average marginal price: {non_null_prices.mean():.2f} EUR/MWh")
+            logging.info(f"Min/Max marginal price: {non_null_prices.min():.2f}/{non_null_prices.max():.2f} EUR/MWh")
+        else:
+            logging.warning("No non-null marginal prices calculated")
+    else:
+        logging.warning("No marginal prices calculated")
+    
+    return results_df
 
-def save_marginal_prices(marginal_prices_df, db_path=ENERGY_DB_PATH):
-    """
-    Save marginal prices to DuckDB database.
+def save_marginal_prices(results_df):
+    """Save marginal prices to the database."""
+    if results_df.empty:
+        logging.warning("No results to save")
+        return
     
-    Args:
-        marginal_prices_df: DataFrame with marginal price calculations
-        db_path: Path to DuckDB database
-        
-    Returns:
-        Number of rows saved
-    """
-    if len(marginal_prices_df) == 0:
-        logging.warning("No marginal prices to save")
-        return 0
+    import duckdb
+    from hypermvp.config import ENERGY_DB_PATH
+    from hypermvp.utils.db_versioning import add_version_metadata
     
-    conn = duckdb.connect(db_path)
+    con = duckdb.connect(ENERGY_DB_PATH)
+    
     try:
-        # Update table schema to use product_code instead of product_block_start
-        conn.execute("""
-        CREATE TABLE IF NOT EXISTS marginal_prices (
-            date DATE,
-            timestamp TIMESTAMP,
-            quarter_hour_start VARCHAR,
-            quarter_hour_end VARCHAR,
-            activated_volume_mw DOUBLE,
-            available_capacity_mw DOUBLE,
-            marginal_price DOUBLE,
-            product_code VARCHAR  -- Changed from product_block_start
-        )
+        # Create table if it doesn't exist
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS marginal_prices (
+                date DATE,
+                timestamp TIMESTAMP,
+                quarter_hour_start VARCHAR,
+                quarter_hour_end VARCHAR,
+                activated_volume_mw DOUBLE,
+                available_capacity_mw DOUBLE,
+                marginal_price DOUBLE,
+                product_code VARCHAR
+            )
         """)
         
-        # Get range of dates in the dataframe
-        min_date = marginal_prices_df['date'].min()
-        max_date = marginal_prices_df['date'].max()
+        # Delete existing rows for these dates to avoid duplicates
+        min_date = results_df['date'].min()
+        max_date = results_df['date'].max()
         
-        # Delete any existing records in this date range
-        conn.execute(f"""
-        DELETE FROM marginal_prices 
-        WHERE date::DATE BETWEEN '{min_date}' AND '{max_date}'
-        """)
+        con.execute("""
+            DELETE FROM marginal_prices
+            WHERE date BETWEEN ? AND ?
+        """, [min_date, max_date])
         
-        # Insert new records
-        conn.register("temp_df", marginal_prices_df)
-        rows_affected = conn.execute("""
-        INSERT INTO marginal_prices
-        SELECT * FROM temp_df
-        """).fetchone()[0]
+        # Insert the new results
+        for _, row in results_df.iterrows():
+            con.execute("""
+                INSERT INTO marginal_prices VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, [
+                row['date'],
+                row['timestamp'],
+                row['quarter_hour_start'],
+                row['quarter_hour_end'],
+                row['activated_volume_mw'],
+                row['available_capacity_mw'],
+                row['marginal_price'],
+                row['product_code']
+            ])
         
-        conn.commit()
-        logging.info(f"Saved {rows_affected} marginal prices to database")
-        return rows_affected
+        # Add version metadata
+        add_version_metadata(con, f"Calculated {len(results_df)} marginal prices for {min_date} to {max_date}", "ANALYSIS")
         
+        logging.info(f"Saved {len(results_df)} marginal prices to database")
+        
+    except Exception as e:
+        logging.error(f"Error saving marginal prices: {e}")
+        raise
     finally:
-        conn.close()
+        con.close()
 
 def calculate_and_save_for_date_range(start_date, end_date=None, db_path=ENERGY_DB_PATH):
     """
@@ -226,48 +359,185 @@ def calculate_and_save_for_date_range(start_date, end_date=None, db_path=ENERGY_
     else:
         return 0
 
-# Debug code should be moved to the end, in a if __name__ == "__main__" block
-if __name__ == "__main__":
-    # Debug code here
-    conn = duckdb.connect(ENERGY_DB_PATH)
-
-    # Check if we have provider data for Sept 1
-    sept1_count = conn.execute("""
-    SELECT COUNT(*) FROM provider_data
-    WHERE DELIVERY_DATE = '2024-09-01'
-    """).fetchone()[0]
-
-    print(f"Found {sept1_count} provider offers for 2024-09-01")
+# Add this function to marginal_price.py
+def diagnose_provider_data():
+    """Diagnose provider data for debugging purposes."""
+    import duckdb
+    from hypermvp.config import ENERGY_DB_PATH
+    import pandas as pd
     
-    # Check what dates are in the provider data
-    dates = conn.execute("""
-    SELECT DISTINCT DELIVERY_DATE FROM provider_data
-    ORDER BY DELIVERY_DATE
+    con = duckdb.connect(ENERGY_DB_PATH)
+    
+    # Check provider data date range
+    date_range = con.execute("""
+        SELECT 
+            MIN(DELIVERY_DATE) as min_date,
+            MAX(DELIVERY_DATE) as max_date,
+            COUNT(DISTINCT DELIVERY_DATE) as num_days,
+            COUNT(*) as total_records
+        FROM provider_data
     """).fetchdf()
-
-    print("Available dates in provider_data:")
-    print(dates)
-
-    # Check the period format in your provider data
-    period_sample = conn.execute("""
-    SELECT DISTINCT period
-    FROM provider_data
-    WHERE DELIVERY_DATE = '2024-09-01'
-    LIMIT 10
+    
+    print("=== PROVIDER DATA OVERVIEW ===")
+    print(f"Date range: {date_range['min_date'].iloc[0]} to {date_range['max_date'].iloc[0]}")
+    print(f"Days with data: {date_range['num_days'].iloc[0]}")
+    print(f"Total records: {date_range['total_records'].iloc[0]:,}")
+    
+    # Check product distribution
+    products = con.execute("""
+        SELECT 
+            PRODUCT,
+            COUNT(*) as count
+        FROM provider_data
+        GROUP BY PRODUCT
+        ORDER BY PRODUCT
     """).fetchdf()
-
-    print("Period column format samples:")
-    print(period_sample)
-
-    # Check if we have any NEG products
-    neg_products = conn.execute("""
-    SELECT COUNT(*), PRODUCT 
-    FROM provider_data
-    WHERE DELIVERY_DATE = '2024-09-01' AND PRODUCT LIKE 'NEG_%'
-    GROUP BY PRODUCT
+    
+    print("\n=== PRODUCT DISTRIBUTION ===")
+    for _, row in products.iterrows():
+        print(f"{row['PRODUCT']}: {row['count']:,} records")
+    
+    # Check distribution of product by day
+    product_by_day = con.execute("""
+        SELECT 
+            DELIVERY_DATE::DATE as date,
+            COUNT(DISTINCT PRODUCT) as product_count,
+            GROUP_CONCAT(DISTINCT PRODUCT) as products
+        FROM provider_data
+        WHERE DELIVERY_DATE::DATE BETWEEN '2024-09-01' AND '2024-09-30'
+        GROUP BY date
+        ORDER BY date
     """).fetchdf()
+    
+    print("\n=== PRODUCTS BY DAY (First 5 days) ===")
+    for _, row in product_by_day.head(5).iterrows():
+        print(f"{row['date']}: {row['product_count']} unique products")
+        
+    # Check for specific NEG products on Sep 1
+    neg_products = con.execute("""
+        SELECT 
+            PRODUCT,
+            COUNT(*) as count,
+            AVG(ENERGY_PRICE__EUR_MWh_) as avg_price
+        FROM provider_data
+        WHERE DELIVERY_DATE::DATE = '2024-09-01'
+        AND PRODUCT LIKE 'NEG%'
+        GROUP BY PRODUCT
+        ORDER BY PRODUCT
+    """).fetchdf()
+    
+    print("\n=== NEG PRODUCTS ON 2024-09-01 ===")
+    if len(neg_products) > 0:
+        for _, row in neg_products.iterrows():
+            print(f"{row['PRODUCT']}: {row['count']} offers, avg price: {row['avg_price']:.2f}")
+    else:
+        print("No NEG products found for 2024-09-01")
+    
+    # Check TYPE_OF_RESERVES distribution
+    reserve_types = con.execute("""
+        SELECT 
+            TYPE_OF_RESERVES,
+            COUNT(*) as count
+        FROM provider_data
+        GROUP BY TYPE_OF_RESERVES
+        ORDER BY TYPE_OF_RESERVES
+    """).fetchdf()
+    
+    print("\n=== RESERVE TYPES ===")
+    for _, row in reserve_types.iterrows():
+        print(f"{row['TYPE_OF_RESERVES']}: {row['count']:,} records")
+    
+    con.close()
 
-    print("\nNEG products available:")
-    print(neg_products)
+# Add this function to check for specific products that are missing
+def check_missing_products():
+    """Check specifically for days and products with missing offers."""
+    import duckdb
+    from hypermvp.config import ENERGY_DB_PATH
+    import pandas as pd
+    
+    con = duckdb.connect(ENERGY_DB_PATH)
+    
+    # Check last day of September specifically
+    print("=== CHECKING SEPTEMBER 30, 2024 ===")
+    day_products = con.execute("""
+        SELECT 
+            PRODUCT,
+            COUNT(*) as offer_count
+        FROM provider_data
+        WHERE DELIVERY_DATE::DATE = '2024-09-30'
+        GROUP BY PRODUCT
+        ORDER BY PRODUCT
+    """).fetchdf()
+    
+    # Find which NEG products exist for Sept 30
+    neg_products = day_products[day_products['PRODUCT'].str.contains('NEG', case=False)]
+    
+    print(f"Found {len(neg_products)} NEG products for 2024-09-30")
+    
+    # Check which ones are missing
+    all_neg_products = [f"NEG_{i:03d}" for i in range(1, 97)]
+    missing_products = set(all_neg_products) - set(neg_products['PRODUCT'].tolist())
+    
+    print(f"Missing products: {', '.join(sorted(missing_products))}")
+    
+    # Check exact format of product codes
+    sample_products = con.execute("""
+        SELECT DISTINCT PRODUCT
+        FROM provider_data
+        WHERE PRODUCT LIKE 'NEG%' OR PRODUCT LIKE 'neg%'
+        LIMIT 10
+    """).fetchdf()
+    
+    print("\n=== SAMPLE PRODUCT FORMATS ===")
+    for prod in sample_products['PRODUCT'].tolist():
+        print(prod)
+    
+    # Check if there's any pattern to the missing products
+    if missing_products:
+        missing_numbers = [int(p.split('_')[1]) for p in missing_products]
+        missing_hours = [(n-1) // 4 for n in missing_numbers]
+        missing_quarters = [(n-1) % 4 for n in missing_numbers]
+        
+        print("\n=== MISSING PRODUCTS PATTERN ===")
+        print(f"Missing hours: {sorted(set(missing_hours))}")
+        print(f"Missing quarters: {sorted(set(missing_quarters))}")
+        
+        # Check all dates for these specific product codes
+        print("\n=== CHECKING IF PRODUCTS ARE MISSING ACROSS ALL DATES ===")
+        for missing_prod in list(missing_products)[:5]:  # Check first 5 only
+            count_by_day = con.execute("""
+                SELECT 
+                    DELIVERY_DATE::DATE as date,
+                    COUNT(*) as count
+                FROM provider_data
+                WHERE PRODUCT = ?
+                GROUP BY date
+                ORDER BY date
+            """, [missing_prod]).fetchdf()
+            
+            dates_with_product = len(count_by_day)
+            print(f"{missing_prod}: found in {dates_with_product} days")
+    
+    con.close()
 
-    conn.close()
+# Add this to your if __name__ == "__main__" block
+if __name__ == "__main__":
+    import sys
+    import logging
+    
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+    
+    if len(sys.argv) > 1 and sys.argv[1] == 'diagnose':
+        diagnose_provider_data()
+        sys.exit(0)
+    
+    if len(sys.argv) > 1 and sys.argv[1] == 'check-missing':
+        check_missing_products()
+        sys.exit(0)
+    
+    start_date = sys.argv[1] if len(sys.argv) > 1 else "2024-09-01"
+    end_date = sys.argv[2] if len(sys.argv) > 2 else None
+    
+    results = calculate_marginal_prices(start_date, end_date)
+    save_marginal_prices(results)

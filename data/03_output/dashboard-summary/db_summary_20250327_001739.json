@@ -1,0 +1,336 @@
+{
+  "timestamp": "2025-03-27 00:17:39",
+  "database_info": {
+    "path": "/home/philly/hypermvp/data/03_output/duckdb/energy_data.duckdb",
+    "size_mb": 15.51171875
+  },
+  "tables": {
+    "afrr_data": {
+      "columns": [
+        {
+          "name": "Datum",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "von",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "bis",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "50Hertz (Negativ)",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "month",
+          "type": "BIGINT"
+        },
+        {
+          "name": "year",
+          "type": "BIGINT"
+        }
+      ],
+      "row_count": 2880,
+      "date_range": null,
+      "sample_data": [
+        {
+          "Datum": "01.09.2024",
+          "von": "00:00",
+          "bis": "00:15",
+          "50Hertz (Negativ)": "4,364",
+          "month": "9",
+          "year": "2024"
+        },
+        {
+          "Datum": "01.09.2024",
+          "von": "00:15",
+          "bis": "00:30",
+          "50Hertz (Negativ)": "10,052",
+          "month": "9",
+          "year": "2024"
+        },
+        {
+          "Datum": "01.09.2024",
+          "von": "00:30",
+          "bis": "00:45",
+          "50Hertz (Negativ)": "53,048",
+          "month": "9",
+          "year": "2024"
+        },
+        {
+          "Datum": "01.09.2024",
+          "von": "00:45",
+          "bis": "01:00",
+          "50Hertz (Negativ)": "118,184",
+          "month": "9",
+          "year": "2024"
+        },
+        {
+          "Datum": "01.09.2024",
+          "von": "01:00",
+          "bis": "01:15",
+          "50Hertz (Negativ)": "41,140",
+          "month": "9",
+          "year": "2024"
+        }
+      ]
+    },
+    "marginal_prices": {
+      "columns": [
+        {
+          "name": "date",
+          "type": "DATE"
+        },
+        {
+          "name": "timestamp",
+          "type": "TIMESTAMP"
+        },
+        {
+          "name": "quarter_hour_start",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "quarter_hour_end",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "activated_volume_mw",
+          "type": "DOUBLE"
+        },
+        {
+          "name": "available_capacity_mw",
+          "type": "DOUBLE"
+        },
+        {
+          "name": "marginal_price",
+          "type": "DOUBLE"
+        },
+        {
+          "name": "product_code",
+          "type": "VARCHAR"
+        }
+      ],
+      "row_count": 1604,
+      "date_range": {
+        "column": "date",
+        "min": "2024-09-01 00:00:00",
+        "max": "2024-09-30 00:00:00"
+      },
+      "sample_data": [
+        {
+          "date": "2024-09-01 00:00:00",
+          "timestamp": "2024-09-01 00:00:00",
+          "quarter_hour_start": "00:00",
+          "quarter_hour_end": "00:15",
+          "activated_volume_mw": "4.364",
+          "available_capacity_mw": "6.0",
+          "marginal_price": "-44.74",
+          "product_code": "NEG_001"
+        },
+        {
+          "date": "2024-09-01 00:00:00",
+          "timestamp": "2024-09-01 00:15:00",
+          "quarter_hour_start": "00:15",
+          "quarter_hour_end": "00:30",
+          "activated_volume_mw": "10.052",
+          "available_capacity_mw": "11.0",
+          "marginal_price": "-38.58",
+          "product_code": "NEG_002"
+        },
+        {
+          "date": "2024-09-01 00:00:00",
+          "timestamp": "2024-09-01 00:30:00",
+          "quarter_hour_start": "00:30",
+          "quarter_hour_end": "00:45",
+          "activated_volume_mw": "53.048",
+          "available_capacity_mw": "58.0",
+          "marginal_price": "-1.04",
+          "product_code": "NEG_003"
+        },
+        {
+          "date": "2024-09-01 00:00:00",
+          "timestamp": "2024-09-01 00:45:00",
+          "quarter_hour_start": "00:45",
+          "quarter_hour_end": "01:00",
+          "activated_volume_mw": "118.184",
+          "available_capacity_mw": "121.0",
+          "marginal_price": "48.0",
+          "product_code": "NEG_004"
+        },
+        {
+          "date": "2024-09-01 00:00:00",
+          "timestamp": "2024-09-01 01:00:00",
+          "quarter_hour_start": "01:00",
+          "quarter_hour_end": "01:15",
+          "activated_volume_mw": "41.14",
+          "available_capacity_mw": "44.0",
+          "marginal_price": "18.61",
+          "product_code": "NEG_005"
+        }
+      ]
+    },
+    "provider_data": {
+      "columns": [
+        {
+          "name": "DELIVERY_DATE",
+          "type": "TIMESTAMP"
+        },
+        {
+          "name": "PRODUCT",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "TYPE_OF_RESERVES",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "ENERGY_PRICE__EUR_MWh_",
+          "type": "DOUBLE"
+        },
+        {
+          "name": "OFFERED_CAPACITY__MW_",
+          "type": "DOUBLE"
+        },
+        {
+          "name": "ALLOCATED_CAPACITY__MW_",
+          "type": "DOUBLE"
+        },
+        {
+          "name": "COUNTRY",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "period",
+          "type": "TIMESTAMP"
+        }
+      ],
+      "row_count": 1827897,
+      "date_range": {
+        "column": "DELIVERY_DATE",
+        "min": "2024-09-01 00:00:00",
+        "max": "2024-09-30 00:00:00"
+      },
+      "sample_data": [
+        {
+          "DELIVERY_DATE": "2024-09-01 00:00:00",
+          "PRODUCT": "NEG_001",
+          "TYPE_OF_RESERVES": "aFRR",
+          "ENERGY_PRICE__EUR_MWh_": "-48.34",
+          "OFFERED_CAPACITY__MW_": "1.0",
+          "ALLOCATED_CAPACITY__MW_": "1.0",
+          "COUNTRY": "DE",
+          "period": "2024-09-01 00:00:00"
+        },
+        {
+          "DELIVERY_DATE": "2024-09-01 00:00:00",
+          "PRODUCT": "NEG_001",
+          "TYPE_OF_RESERVES": "aFRR",
+          "ENERGY_PRICE__EUR_MWh_": "-44.74",
+          "OFFERED_CAPACITY__MW_": "5.0",
+          "ALLOCATED_CAPACITY__MW_": "5.0",
+          "COUNTRY": "DE",
+          "period": "2024-09-01 00:00:00"
+        },
+        {
+          "DELIVERY_DATE": "2024-09-01 00:00:00",
+          "PRODUCT": "NEG_001",
+          "TYPE_OF_RESERVES": "aFRR",
+          "ENERGY_PRICE__EUR_MWh_": "-39.11",
+          "OFFERED_CAPACITY__MW_": "5.0",
+          "ALLOCATED_CAPACITY__MW_": "5.0",
+          "COUNTRY": "DE",
+          "period": "2024-09-01 00:00:00"
+        },
+        {
+          "DELIVERY_DATE": "2024-09-01 00:00:00",
+          "PRODUCT": "NEG_001",
+          "TYPE_OF_RESERVES": "aFRR",
+          "ENERGY_PRICE__EUR_MWh_": "-38.58",
+          "OFFERED_CAPACITY__MW_": "5.0",
+          "ALLOCATED_CAPACITY__MW_": "5.0",
+          "COUNTRY": "DE",
+          "period": "2024-09-01 00:00:00"
+        },
+        {
+          "DELIVERY_DATE": "2024-09-01 00:00:00",
+          "PRODUCT": "NEG_001",
+          "TYPE_OF_RESERVES": "aFRR",
+          "ENERGY_PRICE__EUR_MWh_": "-35.11",
+          "OFFERED_CAPACITY__MW_": "2.0",
+          "ALLOCATED_CAPACITY__MW_": "2.0",
+          "COUNTRY": "DE",
+          "period": "2024-09-01 00:00:00"
+        }
+      ]
+    },
+    "version_history": {
+      "columns": [
+        {
+          "name": "version_id",
+          "type": "INTEGER"
+        },
+        {
+          "name": "timestamp",
+          "type": "TIMESTAMP"
+        },
+        {
+          "name": "operation_type",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "source_files",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "username",
+          "type": "VARCHAR"
+        }
+      ],
+      "row_count": 6,
+      "date_range": {
+        "column": "timestamp",
+        "min": "2025-03-18 22:52:22.140913",
+        "max": "2025-03-27 00:03:36.485669"
+      },
+      "sample_data": [
+        {
+          "version_id": "1",
+          "timestamp": "2025-03-18 22:52:22.140913",
+          "operation_type": "provider_data_update",
+          "source_files": "['provider_data']",
+          "username": "philly"
+        },
+        {
+          "version_id": "2",
+          "timestamp": "2025-03-18 22:52:22.712289",
+          "operation_type": "afrr_update_9_2024",
+          "source_files": "['/home/philly/hypermvp/data/01_raw/testdata_aFRR_sept.csv']",
+          "username": "philly"
+        },
+        {
+          "version_id": "3",
+          "timestamp": "2025-03-23 19:37:18.855553",
+          "operation_type": "provider_data_update",
+          "source_files": "['provider_data']",
+          "username": "philly"
+        },
+        {
+          "version_id": "4",
+          "timestamp": "2025-03-23 19:40:43.305558",
+          "operation_type": "provider_data_update",
+          "source_files": "['provider_data']",
+          "username": "philly"
+        },
+        {
+          "version_id": "5",
+          "timestamp": "2025-03-23 20:21:05.214245",
+          "operation_type": "provider_data_update",
+          "source_files": "['provider_data']",
+          "username": "philly"
+        }
+      ]
+    }
+  }
+}
