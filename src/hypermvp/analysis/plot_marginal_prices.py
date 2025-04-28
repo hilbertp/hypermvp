@@ -2,7 +2,7 @@ import duckdb
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from hypermvp.config import ENERGY_DB_PATH, OUTPUT_DATA_DIR
+from hypermvp.global_config import ENERGY_DB_PATH, OUTPUT_DATA_DIR
 import os
 
 def plot_marginal_prices(date="2024-09-01"):

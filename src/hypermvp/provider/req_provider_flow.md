@@ -41,7 +41,7 @@ To prevent duplicates while maintaining historical data:
 
 1. **Date Standardization**: Ensure all date columns are properly formatted
 
-   - Technical standards are defined in `hypermvp/config.py`, which includes:
+   - Technical standards are defined in `hypermvp/global_config.py`, which includes:
      - `ISO_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"`
      - `ISO_DATE_FORMAT = "%Y-%m-%d"`
      - `standardize_date_column()` helper function

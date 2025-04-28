@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from datetime import datetime, timedelta
 import numpy as np
-from hypermvp.config import ENERGY_DB_PATH
+from hypermvp.global_config import ENERGY_DB_PATH
 
 def analyze_bid_distribution(date, db_path=ENERGY_DB_PATH):
     """

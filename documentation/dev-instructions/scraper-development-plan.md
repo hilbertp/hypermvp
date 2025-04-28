@@ -12,7 +12,7 @@ Create a robust data scraping system to automate the collection of energy market
 
 ### Architecture
 
-```
+```bash
 src/hypermvp/scrapers/
 ├── base_scraper.py         # Abstract base class with common functionality
 ├── provider_scraper.py     # Specialized for provider offer data
@@ -35,7 +35,7 @@ src/hypermvp/scrapers/
 #### Day 2-3: aFRR Scraper Research & Development
 
 - Research netztransparenz.de structure, HTML patterns, and form submission
-- Confirm URL: https://www.netztransparenz.de/de-de/Regelenergie/Daten-Regelreserve/Aktivierte-Regelleistung
+- Confirm URL: <https://www.netztransparenz.de/de-de/Regelenergie/Daten-Regelreserve/Aktivierte-Regelleistung>
 - Identify product codes: `k*Delta f (PRL) qualitätsgesichert` for primary frequency control
 - Implement initial `afrr_scraper.py` with date filtering
 
@@ -44,8 +44,8 @@ src/hypermvp/scrapers/
 #### Day 4-5: Provider Scraper Research & Development
 
 - Research regelleistung.net API endpoints and parameters
-- Confirm URL: https://www.regelleistung.net/apps/datacenter/tenders/
-- Verify API URL: https://www.regelleistung.net/apps/datacenter-api/v1/tenders
+- Confirm URL: <https://www.regelleistung.net/apps/datacenter/tenders/>
+- Verify API URL: <https://www.regelleistung.net/apps/datacenter-api/v1/tenders>
 - Implement API-based approach in `provider_scraper.py`
 - Test data retrieval for SRL (secondary frequency control) products
 

@@ -1,7 +1,7 @@
 import pandas as pd
 import re
 import logging
-from hypermvp.config import (
+from hypermvp.global_config import (
     ISO_DATETIME_FORMAT, 
     ISO_DATE_FORMAT,
     standardize_date_column

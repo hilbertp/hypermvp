@@ -2,7 +2,7 @@ import argparse
 import logging
 from datetime import datetime, timedelta
 import pandas as pd
-from hypermvp.config import ENERGY_DB_PATH
+from hypermvp.global_config import ENERGY_DB_PATH
 from hypermvp.analysis.marginal_price import calculate_and_save_for_date_range
 
 def main():

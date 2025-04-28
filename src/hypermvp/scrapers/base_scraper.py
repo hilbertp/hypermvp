@@ -7,8 +7,8 @@ from pathlib import Path
 import time
 import random
 from datetime import datetime, timedelta
-from hypermvp.config import RAW_DATA_DIR
-from hypermvp.scrapers.config import USER_AGENTS, MAX_RETRIES, REQUEST_DELAY
+from hypermvp.global_config import RAW_DATA_DIR
+from hypermvp.scrapers.scraper_config import USER_AGENTS, MAX_RETRIES, REQUEST_DELAY
 
 class BaseScraper(ABC):
     """Base class for web scrapers with common functionality."""

@@ -1,6 +1,6 @@
 import duckdb
 import pandas as pd
-from hypermvp.config import ENERGY_DB_PATH
+from hypermvp.global_config import ENERGY_DB_PATH
 
 def view_marginal_prices(date=None):
     """View calculated marginal prices with optional date filter"""

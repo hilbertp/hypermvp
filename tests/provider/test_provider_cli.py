@@ -123,7 +123,7 @@ class TestProviderCli(unittest.TestCase):
         
         # Run the CLI command
         command = [
-            "python", "-m", "hypermvp.provider.provider_cli",
+            "python", "-m", "hypermvp.provider.cli",  # was provider_cli
             "--all",
             "--dir", self.input_dir,
             "--db", self.db_path

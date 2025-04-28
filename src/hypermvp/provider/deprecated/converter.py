@@ -24,7 +24,7 @@ import pandas as pd
 import threading
 import sys
 from concurrent.futures import ThreadPoolExecutor
-from hypermvp.config import (
+from hypermvp.global_config import (
     PROVIDER_RAW_DIR,
     ISO_DATETIME_FORMAT,
     ISO_DATE_FORMAT,

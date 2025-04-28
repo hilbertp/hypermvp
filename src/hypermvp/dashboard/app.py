@@ -11,7 +11,7 @@ import json
 
 # Add the project root to the path so we can import the config
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../')))
-from hypermvp.config import ENERGY_DB_PATH, ISO_DATETIME_FORMAT, ISO_DATE_FORMAT, TIME_FORMAT
+from hypermvp.global_config import ENERGY_DB_PATH, ISO_DATETIME_FORMAT, ISO_DATE_FORMAT, TIME_FORMAT
 
 def connect_to_db():
     """Connect to DuckDB database."""

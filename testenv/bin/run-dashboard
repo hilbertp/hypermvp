@@ -1,0 +1,6 @@
+#!/home/philly/hypermvp/testenv/bin/python
+import sys
+from hypermvp.dashboard.run import run_dashboard
+
+if __name__ == '__main__':
+    sys.exit(run_dashboard())

@@ -1,12 +1,5 @@
 #!/usr/bin/env python3
-"""
-Main processing workflow for energy data.
-This script:
-  1. Provider workflow: Loads XLSX files directly to DuckDB and processes in-database.
-  2. AFRR workflow: Loads CSV files, cleans data, saves directly to DuckDB.
-  3. Analysis workflow: Calculates marginal prices and other analytics.
-"""
-
+import sys
 import argparse
 import logging
 import os
@@ -15,23 +8,40 @@ import subprocess
 from datetime import datetime
 import pandas as pd
 import re
+import glob
+import duckdb
+import threading
+import queue
+from tqdm import tqdm
+
+"""
+Main processing workflow for energy data.
+This script:
+  1. Provider workflow: Loads XLSX files directly to DuckDB and processes in-database.
+  2. AFRR workflow: Loads CSV files, cleans data, saves directly to DuckDB.
+  3. Analysis workflow: Calculates marginal prices and other analytics.
+"""
 
 # Add after your imports
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning, 
                       message="Workbook contains no default style, apply openpyxl's default")
 
-# Import configuration
+# Import configuration - update the list to include PROVIDER_RAW_DIR
 from hypermvp.config import (
     DATA_DIR, RAW_DATA_DIR, PROCESSED_DATA_DIR, 
     OUTPUT_DATA_DIR, AFRR_FILE_PATH, DUCKDB_DIR,
-    AFRR_DUCKDB_PATH, PROVIDER_DUCKDB_PATH, ENERGY_DB_PATH
+    AFRR_DUCKDB_PATH, PROVIDER_DUCKDB_PATH, ENERGY_DB_PATH,
+    PROVIDER_RAW_DIR  # Add this import
 )
 
 # Import AFRR modules
 from hypermvp.afrr.loader import load_afrr_data
 from hypermvp.afrr.cleaner import filter_negative_50hertz
 from hypermvp.afrr.save_to_duckdb import save_afrr_to_duckdb
+
+# Import provider loader
+from hypermvp.provider.etl import atomic_load_excels
 
 # Configure logging
 logging.basicConfig(
@@ -40,85 +50,135 @@ logging.basicConfig(
     handlers=[logging.StreamHandler()]
 )
 
+def read_stdout(pipe, q):
+    # Read lines from the pipe and put them into a queue
+    for line in iter(pipe.readline, ''):
+        q.put(line.strip())
+    pipe.close()
+
+def parse_number(num_str):
+    """Parse a number that might have commas as thousand separators"""
+    return int(num_str.replace(',', ''))
+
 def process_provider_workflow():
     """
-    End-to-end workflow for processing provider data using direct database operations.
-    
-    This implementation follows the requirements in req_provider_flow.md, particularly
-    the critical business logic for handling anonymized bids by using date range replacement.
+    Loads all provider Excel files atomically: 
+    - Validates all files/sheets for required columns and date range.
+    - If any fail, aborts the entire import.
+    - If all succeed, deletes and replaces all data for the affected date range in DuckDB.
     """
     try:
-        import os
-        import time
-        import glob
-        import subprocess
-        
         logging.info("=== STARTING PROVIDER WORKFLOW ===")
         start = time.time()
-        
-        # Run the provider CLI as a module
-        from hypermvp.config import PROVIDER_RAW_DIR, ENERGY_DB_PATH
-        
-        # 1. First load the data to DuckDB
-        logging.info("=" * 60)
-        logging.info("STEP 1: LOADING DATA TO DUCKDB")
-        logging.info("=" * 60)
-        
-        load_cmd = [
-            "python", "-m", "hypermvp.provider.provider_cli",
-            "--load", 
-            "--dir", PROVIDER_RAW_DIR,
-            "--db", ENERGY_DB_PATH,
-            "--verbose"
-        ]
-        
-        load_result = subprocess.run(load_cmd, capture_output=True, text=True)
-        for line in load_result.stdout.splitlines():
-            logging.info(line)
-        
-        if load_result.returncode != 0:
-            for line in load_result.stderr.splitlines():
-                logging.error(line)
-            raise RuntimeError("Data loading failed")
-        
-        # 2. Analyze the raw data
+
+        provider_files = glob.glob(os.path.join(PROVIDER_RAW_DIR, "*.xlsx"))
+        if not provider_files:
+            logging.error(f"No new provider files found in the raw data directory: {PROVIDER_RAW_DIR}. Aborting workflow.")
+            return
+
+        # Atomic, all-or-nothing import
+        logging.info("Validating and loading all provider Excel files atomically...")
+        rows_loaded = atomic_load_excels(PROVIDER_RAW_DIR, ENERGY_DB_PATH, table_name="raw_provider_data")
+        if rows_loaded == 0:
+            logging.error("Provider import failed or aborted. No data loaded. Workflow stopped.")
+            return
+        logging.info(f"Provider import succeeded. {rows_loaded:,} rows loaded.")
+
+        # Continue with analysis and update only if import succeeded
         logging.info("=" * 60)
         logging.info("STEP 2: ANALYZING RAW DATA")
         logging.info("=" * 60)
-        
         analyze_cmd = [
             "python", "-m", "hypermvp.provider.provider_cli",
             "--analyze", 
             "--db", ENERGY_DB_PATH,
             "--verbose"
         ]
-        
         analyze_result = subprocess.run(analyze_cmd, capture_output=True, text=True)
         for line in analyze_result.stdout.splitlines():
             logging.info(line)
-        
-        # 3. Update the data
+        if analyze_result.returncode != 0:
+            logging.error("Analysis step failed. STDERR:")
+            logging.error(analyze_result.stderr)
+            raise RuntimeError("Data analysis failed")
+
         logging.info("=" * 60)
         logging.info("STEP 3: UPDATING DATA WITH DATE RANGE HANDLING")
         logging.info("=" * 60)
-        
         update_cmd = [
             "python", "-m", "hypermvp.provider.provider_cli",
             "--update", 
             "--db", ENERGY_DB_PATH,
             "--verbose"
         ]
-        
-        update_result = subprocess.run(update_cmd, capture_output=True, text=True)
-        for line in update_result.stdout.splitlines():
-            logging.info(line)
-        
-        if update_result.returncode != 0:
-            for line in update_result.stderr.splitlines():
-                logging.error(line)
+
+        logging.info("Starting update subprocess...")
+
+        start_update = time.time()
+        proc = subprocess.Popen(update_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
+        # Create a queue and thread to read progress messages from stdout
+        stdout_queue = queue.Queue()
+        stdout_thread = threading.Thread(target=read_stdout, args=(proc.stdout, stdout_queue))
+        stdout_thread.daemon = True
+        stdout_thread.start()
+
+        # Initialize progress variables
+        initial_total = 0   # Will be updated once we parse a valid progress message
+        current_processed = 0
+
+        # Regex to capture progress messages like: "Processed 12345 out of 67890 rows"
+        progress_pattern = re.compile(r"(?:Processed|Updated|Completed)\s+(\d+(?:,\d+)*)\s+(?:out of|of|\/)\s+(\d+(?:,\d+)*)")
+        last_bar_update = 0
+
+        with tqdm(total=initial_total, unit="rows", dynamic_ncols=True, desc="Update Progress", 
+                  bar_format="{desc}: {n_fmt}/{total_fmt} ({percentage:3.0f}%)") as pbar:
+            while True:
+                ret = proc.poll()
+                elapsed = time.time() - start_update
+
+                # Read and parse stdout messages from the subprocess
+                try:
+                    while True:
+                        progress_line = stdout_queue.get_nowait()
+                        # Debug: log the raw progress line
+                        logging.debug("Raw progress line: %s", progress_line)
+                        m = progress_pattern.search(progress_line)
+                        if m:
+                            current_processed = parse_number(m.group(1))
+                            total_rows = parse_number(m.group(2))
+                            # Only update total if we got a meaningful value
+                            if total_rows > 0 and pbar.total != total_rows:
+                                pbar.total = total_rows
+                        # Always update the postfix with the latest raw line
+                        pbar.set_postfix({"step": progress_line})
+                except queue.Empty:
+                    pass
+
+                # Only update the bar if a valid total has been received
+                if pbar.total > 0 and (time.time() - last_bar_update) >= 5:
+                    pbar.n = current_processed
+                    pbar.refresh()
+                    last_bar_update = time.time()
+
+                if ret is not None:
+                    break
+
+                time.sleep(0.5)
+                
+        pbar.close()
+        sys.stdout.write("\n")
+        stdout, stderr = proc.communicate()
+        logging.info("Update STDOUT:")
+        logging.info(stdout)
+        if ret != 0:
+            logging.error("Update STDERR:")
+            logging.error(stderr)
             raise RuntimeError("Data updating failed")
+        else:
+            logging.info("Update completed successfully.")
         
-        # 4. Archive the processed files
+        # 4. Archive processed files with error checking
         logging.info("=" * 60)
         logging.info("STEP 4: ARCHIVING FILES")
         logging.info("=" * 60)
@@ -128,16 +188,19 @@ def process_provider_workflow():
         
         archive_cmd = [
             "python", "-m", "hypermvp.provider.provider_cli",
-            "--load", 
+            "--load",  # Add one of the required actions
+            "--archive",
             "--dir", PROVIDER_RAW_DIR,
             "--db", ENERGY_DB_PATH,
-            "--archive",
             "--verbose"
         ]
-        
         archive_result = subprocess.run(archive_cmd, capture_output=True, text=True)
         for line in archive_result.stdout.splitlines():
             logging.info(line)
+        if archive_result.returncode != 0:
+            logging.error("Archival step has errors:")
+            logging.error(archive_result.stderr)
+            raise RuntimeError("File archival failed")
         
         logging.info(f"Total workflow took {time.time() - start:.2f} seconds")
         logging.info("=== PROVIDER WORKFLOW COMPLETE ===")

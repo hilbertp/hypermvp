@@ -5,7 +5,7 @@ import time
 import glob
 import threading
 import sys
-from hypermvp.config import (
+from hypermvp.global_config import (
     PROVIDER_FILE_PATHS, 
     PROVIDER_RAW_DIR,
     ISO_DATETIME_FORMAT,

@@ -10,7 +10,7 @@ from typing import Optional, List, Dict, Any
 import random
 
 from hypermvp.scrapers.base_scraper import BaseScraper
-from hypermvp.scrapers.config import PROVIDER_CONFIG, USER_AGENTS
+from hypermvp.scrapers.scraper_config import PROVIDER_CONFIG, USER_AGENTS
 
 class ProviderScraper(BaseScraper):
     """Scraper for downloading market results data from regelleistung.net."""

@@ -3,7 +3,7 @@ import duckdb
 import logging
 from datetime import datetime, timedelta, date
 # Add standardized date format imports
-from hypermvp.config import ENERGY_DB_PATH, ISO_DATETIME_FORMAT, ISO_DATE_FORMAT, TIME_FORMAT, AFRR_DATE_FORMAT
+from hypermvp.global_config import ENERGY_DB_PATH, ISO_DATETIME_FORMAT, ISO_DATE_FORMAT, TIME_FORMAT, AFRR_DATE_FORMAT
 
 def calculate_marginal_prices(start_date=None, end_date=None):
     """
@@ -22,7 +22,7 @@ def calculate_marginal_prices(start_date=None, end_date=None):
     import logging
     
     # Connect to DB
-    from hypermvp.config import ENERGY_DB_PATH
+    from hypermvp.global_config import ENERGY_DB_PATH
     con = duckdb.connect(ENERGY_DB_PATH)
     
     # Convert string dates to datetime objects if needed
@@ -283,7 +283,7 @@ def save_marginal_prices(results_df):
         return
     
     import duckdb
-    from hypermvp.config import ENERGY_DB_PATH
+    from hypermvp.global_config import ENERGY_DB_PATH
     from hypermvp.utils.db_versioning import add_version_metadata
     
     con = duckdb.connect(ENERGY_DB_PATH)
@@ -363,7 +363,7 @@ def calculate_and_save_for_date_range(start_date, end_date=None, db_path=ENERGY_
 def diagnose_provider_data():
     """Diagnose provider data for debugging purposes."""
     import duckdb
-    from hypermvp.config import ENERGY_DB_PATH
+    from hypermvp.global_config import ENERGY_DB_PATH
     import pandas as pd
     
     con = duckdb.connect(ENERGY_DB_PATH)
@@ -453,7 +453,7 @@ def diagnose_provider_data():
 def check_missing_products():
     """Check specifically for days and products with missing offers."""
     import duckdb
-    from hypermvp.config import ENERGY_DB_PATH
+    from hypermvp.global_config import ENERGY_DB_PATH
     import pandas as pd
     
     con = duckdb.connect(ENERGY_DB_PATH)

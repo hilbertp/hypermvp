@@ -1,6 +1,6 @@
 import pandas as pd
 import logging
-from hypermvp.config import AFRR_DATE_FORMAT, TIME_FORMAT, standardize_date_column
+from hypermvp.global_config import AFRR_DATE_FORMAT, TIME_FORMAT, standardize_date_column
 
 def filter_negative_50hertz(data):
     """

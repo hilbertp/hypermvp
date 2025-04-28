@@ -3,7 +3,7 @@ import logging
 import shutil
 import gzip
 from datetime import datetime
-from hypermvp.config import OUTPUT_DATA_DIR, PROVIDER_DUCKDB_PATH  # Import both needed config variables
+from hypermvp.global_config import OUTPUT_DATA_DIR, PROVIDER_DUCKDB_PATH  # Import both needed config variables
 
 # Add this flag at the top of the file
 ENABLE_SNAPSHOTS = False  # Set to True when ready for production

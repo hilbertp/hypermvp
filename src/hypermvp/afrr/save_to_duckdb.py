@@ -3,7 +3,7 @@ import time
 import logging
 import pandas as pd
 import duckdb
-from hypermvp.config import PROCESSED_DATA_DIR, DUCKDB_PATH, AFRR_FILE_PATH
+from hypermvp.global_config import PROCESSED_DATA_DIR, DUCKDB_PATH, AFRR_FILE_PATH
 from hypermvp.utils.db_versioning import create_duckdb_snapshot, add_version_metadata
 
 def save_afrr_to_duckdb(cleaned_afrr_data, month, year, table_name="afrr_data", db_path=None):

@@ -29,7 +29,7 @@ class TestProviderScraper:
         excel_file_name = file_name.replace('.zip', '')
         
         # Get the API URL format from the config
-        from hypermvp.scrapers.config import PROVIDER_CONFIG
+        from hypermvp.scrapers.scraper_config import PROVIDER_CONFIG
         api_url = f"{PROVIDER_CONFIG['api_url']}/download/tenders/files/{file_name}"
         
         # Create a small fake zip file as response content

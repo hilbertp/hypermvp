@@ -10,7 +10,7 @@ import calendar
 import time
 
 from hypermvp.scrapers.afrr_scraper import AFRRScraper
-from hypermvp.config import (
+from hypermvp.global_config import (
     RAW_DATA_DIR,
     ISO_DATETIME_FORMAT,
     ISO_DATE_FORMAT,
