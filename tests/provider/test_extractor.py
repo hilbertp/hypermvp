@@ -30,13 +30,12 @@ def sample_excel_file(tmp_path):
     return str(file_path)
 
 def test_read_excel_file(sample_excel_file):
-    """Test reading all sheets from a sample Excel file."""
     sheets = read_excel_file(sample_excel_file)
     assert isinstance(sheets, dict)
     assert set(sheets.keys()) == {"Sheet1", "Sheet2"}
     assert isinstance(sheets["Sheet1"], pl.DataFrame)
-    assert sheets["Sheet1"].shape == (2, 6)
-    assert sheets["Sheet2"].shape == (1, 6)
+    assert sheets["Sheet1"].shape == (2, 5)  # 5 columns, NOTE dropped
+    assert sheets["Sheet2"].shape == (1, 5)
 
 def test_extract_excels(sample_excel_file):
     """Test extracting multiple Excel files."""
@@ -50,3 +49,17 @@ def test_extract_excels(sample_excel_file):
     assert len(result) == 2
     for sheets in result:
         assert set(sheets.keys()) == {"Sheet1", "Sheet2"}
+
+def test_read_excel_file_keeps_nonempty_last_column(tmp_path):
+    """Test that a non-empty last column is kept."""
+    import pandas as pd
+    file_path = tmp_path / "test_nonempty_note.xlsx"
+    df = pd.DataFrame({
+        "A": [1, 2],
+        "B": [3, 4],
+        "NOTE": ["", "something"]
+    })
+    df.to_excel(file_path, index=False)
+    sheets = read_excel_file(str(file_path))
+    for df in sheets.values():
+        assert "NOTE" in df.columns

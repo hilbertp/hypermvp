@@ -1,7 +1,7 @@
 """
 Configuration settings for the provider ETL pipeline.
 
-This module centralizes all schema definitions, required columns, and performance-related settings.
+Centralizes all schema definitions, required columns, and performance-related settings.
 Import this in other modules to ensure consistency and easy maintenance.
 
 Plain English summary:
@@ -17,9 +17,9 @@ import os
 RAW_TABLE_SCHEMA = {
     "DELIVERY_DATE": "VARCHAR",
     "PRODUCT": "VARCHAR",
-    "ENERGY_PRICE_[EUR/MWh]": "VARCHAR",
+    "ENERGY_PRICE_[EUR/MWh]": "DOUBLE",
     "ENERGY_PRICE_PAYMENT_DIRECTION": "VARCHAR",
-    "ALLOCATED_CAPACITY_[MW]": "VARCHAR",
+    "ALLOCATED_CAPACITY_[MW]": "DOUBLE",
     "NOTE": "VARCHAR",
     "source_file": "VARCHAR",
     "load_timestamp": "TIMESTAMP"
@@ -41,12 +41,19 @@ REQUIRED_COLUMNS = [
     "PRODUCT",
     "ENERGY_PRICE_[EUR/MWh]",
     "ENERGY_PRICE_PAYMENT_DIRECTION",
-    "ALLOCATED_CAPACITY_[MW]",
-    "NOTE"
+    "ALLOCATED_CAPACITY_[MW]"
+    # "NOTE" is now optional and not required
 ]
 
+# Polars read_excel options for performance and compatibility
+POLARS_READ_OPTS = {
+    "engine": "calamine",
+    # Remove "read_options" and "dtype" keys that are not supported by your Polars version
+    # Only include supported arguments for your installed version of Polars
+}
+
 # Performance settings
-MAX_PARALLEL_SHEETS = min(2, os.cpu_count() or 4)  # Conservative default for parallel Excel reading
+MAX_PARALLEL_SHEETS = min(4, os.cpu_count() or 4)  # Parallel Excel reading
 BATCH_SIZE = 100_000  # Rows per batch insert into DuckDB
 
 # DuckDB settings
@@ -55,11 +62,6 @@ DUCKDB_THREADS = min(6, os.cpu_count() or 4)  # Default thread count for DuckDB
 # Progress bar settings
 PROGRESS_BAR_COLOR = "green"
 PROGRESS_BAR_DISABLE = False  # Set to True in automated environments
-
-# Polars read_excel options (if using Polars for Excel reading)
-POLARS_READ_OPTS = dict(
-    engine="calamine",  # Rust-based Excel engine (fast)
-)
 
 # Date/time formats (used for standardization)
 ISO_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
