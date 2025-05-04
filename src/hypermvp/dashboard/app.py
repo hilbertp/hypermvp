@@ -96,24 +96,24 @@ def get_afrr_data_summary(con):
             return None
             
         # Get date summary
-        date_range = con.execute("""
+        date_range = con.execute(f"""
             SELECT 
-                MIN(STRPTIME("Datum", '%d.%m.%Y')) as min_date,
-                MAX(STRPTIME("Datum", '%d.%m.%Y')) as max_date,
-                COUNT(DISTINCT STRPTIME("Datum", '%d.%m.%Y')) as num_days,
+                MIN(STRPTIME("Datum", ?)) as min_date,
+                MAX(STRPTIME("Datum", ?)) as max_date,
+                COUNT(DISTINCT STRPTIME("Datum", ?)) as num_days,
                 COUNT(*) as total_records
             FROM afrr_data
-        """).fetchdf()
+        """, [AFRR_DATE_FORMAT, AFRR_DATE_FORMAT, AFRR_DATE_FORMAT]).fetchdf()
         
         # Get counts by day
-        day_counts = con.execute("""
+        day_counts = con.execute(f"""
             SELECT 
-                STRPTIME("Datum", '%d.%m.%Y')::DATE as date,
+                STRPTIME("Datum", ?)::DATE as date,
                 COUNT(*) as count
             FROM afrr_data
             GROUP BY date
             ORDER BY date
-        """).fetchdf()
+        """, [AFRR_DATE_FORMAT]).fetchdf()
         
         return {
             "date_range": date_range,
@@ -566,6 +566,7 @@ def load_afrr_data(file_path):
     """Load AFRR data from CSV file with proper handling of German formats."""
     import pandas as pd
     import locale
+    from hypermvp.global_config import AFRR_DATE_FORMAT, standardize_date_column
     
     # Save original locale
     old_locale = locale.getlocale(locale.LC_NUMERIC)
@@ -581,6 +582,9 @@ def load_afrr_data(file_path):
             parse_dates=['Datum'],  # Parse dates
             dayfirst=True,  # German date format (day first)
         )
+        
+        # Standardize date column format
+        df = standardize_date_column(df, 'Datum', AFRR_DATE_FORMAT)
         
         # Rename problematic columns to remove special characters
         df = df.rename(columns={

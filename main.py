@@ -42,6 +42,8 @@ from hypermvp.afrr.save_to_duckdb import save_afrr_to_duckdb
 
 # Import provider loader
 from hypermvp.provider.etl import run_etl
+# Import provider cleaning logic
+from hypermvp.provider.provider_db_cleaner import clean_provider_table
 
 # Configure logging
 logging.basicConfig(
@@ -63,22 +65,24 @@ def parse_number(num_str):
 def process_provider_workflow():
     """
     Loads all provider Excel files from PROVIDER_RAW_DIR into DuckDB using the atomic ETL workflow.
-    Plain English: This function finds all .xlsx files in the provider raw data directory and loads them into your DuckDB database, ensuring validation and error handling.
+    No NOTE column filtering or logging; all NOTE values are imported as-is.
+    After loading, runs the provider table cleaning logic.
     """
     from pathlib import Path
+    import polars as pl
 
     excel_files = list(Path(PROVIDER_RAW_DIR).glob("*.xlsx"))
     if not excel_files:
         logging.warning(f"No Excel files found in {PROVIDER_RAW_DIR}. Nothing to load.")
         return
 
-    logging.info(f"Found {len(excel_files)} provider Excel files. Starting ETL...")
+    # No NOTE column cleaning or logging, just run the ETL
+    logging.info(f"Found {len(excel_files):,} provider Excel files. Starting ETL...")
     summary = run_etl(
         [str(f) for f in excel_files],
         db_path=PROVIDER_DUCKDB_PATH,
         table_name="provider_raw"
     )
-    # Format numbers with thousands separators for readability
     files_processed = f"{summary['files_processed']:,}"
     sheets_loaded = f"{summary['sheets_loaded']:,}"
     rows_loaded = f"{summary['rows_loaded']:,}"
@@ -87,6 +91,10 @@ def process_provider_workflow():
         f"sheets_loaded={sheets_loaded}, rows_loaded={rows_loaded}, "
         f"errors={summary['errors']}"
     )
+    # Run cleaning logic after ETL
+    logging.info("Running provider table cleaning logic...")
+    clean_provider_table(PROVIDER_DUCKDB_PATH)
+    logging.info("Provider table cleaning complete.")
 
 def main():
     parser = argparse.ArgumentParser(

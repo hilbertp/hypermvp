@@ -12,6 +12,7 @@ Plain English summary:
 """
 
 import os
+from hypermvp.global_config import ISO_DATETIME_FORMAT, ISO_DATE_FORMAT, standardize_date_column
 
 # Table schema for raw provider data (matches Excel input)
 RAW_TABLE_SCHEMA = {
@@ -63,14 +64,19 @@ DUCKDB_THREADS = min(6, os.cpu_count() or 4)  # Default thread count for DuckDB
 PROGRESS_BAR_COLOR = "green"
 PROGRESS_BAR_DISABLE = False  # Set to True in automated environments
 
-# Date/time formats (used for standardization)
-ISO_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
-ISO_DATE_FORMAT = "%Y-%m-%d"
-
-def standardize_date_column(df, column, fmt=ISO_DATETIME_FORMAT):
+# Use polars-specific wrapper for standardizing date columns
+def standardize_polars_date_column(df, column, fmt=ISO_DATE_FORMAT):
     """
-    Standardizes a date column in a DataFrame to the specified format.
+    Standardizes a date column in a Polars DataFrame to the specified format.
     Returns a new DataFrame with the column converted.
+    
+    Args:
+        df: Polars DataFrame containing the date column
+        column: Name of the column to standardize
+        fmt: Date format string to use for parsing
+        
+    Returns:
+        Polars DataFrame with standardized date column
     """
     import polars as pl
     return df.with_columns(

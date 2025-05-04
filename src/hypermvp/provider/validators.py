@@ -6,10 +6,12 @@ import logging
 import os
 from typing import Tuple, List, Optional, Dict, Any
 import polars as pl
+from datetime import datetime
 
-from .provider_etl_config import REQUIRED_COLUMNS
+from .provider_etl_config import REQUIRED_COLUMNS, standardize_polars_date_column
 from .extractor import read_excel_file, find_excel_files
 from .progress import progress_bar
+from hypermvp.global_config import ISO_DATE_FORMAT
 
 def validate_excel_columns(
     df: pl.DataFrame, 
@@ -73,7 +75,24 @@ def extract_date_range(
         min_date = dates_df.select(pl.min("DELIVERY_DATE")).item()
         max_date = dates_df.select(pl.max("DELIVERY_DATE")).item()
         
-        return str(min_date), str(max_date)
+        # Try to standardize dates if they're in string format
+        try:
+            if isinstance(min_date, str):
+                min_date = datetime.strptime(min_date, ISO_DATE_FORMAT).strftime(ISO_DATE_FORMAT)
+            else:
+                min_date = str(min_date)
+                
+            if isinstance(max_date, str):
+                max_date = datetime.strptime(max_date, ISO_DATE_FORMAT).strftime(ISO_DATE_FORMAT)
+            else:
+                max_date = str(max_date)
+        except ValueError:
+            # If date parsing fails, just use the string representation
+            min_date = str(min_date)
+            max_date = str(max_date)
+            logging.warning(f"Date format conversion failed in {file_name} sheet '{sheet_name}'")
+        
+        return min_date, max_date
     except Exception as e:
         logging.error(f"Error extracting dates from {file_name} sheet '{sheet_name}': {e}")
         return None, None

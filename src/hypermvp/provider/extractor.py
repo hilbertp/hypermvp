@@ -20,7 +20,7 @@ def read_excel_file(filepath: str) -> Dict[str, pl.DataFrame]:
     Reads all sheets from an Excel file into a dictionary of Polars DataFrames.
     Always returns a dict, even for single-sheet files.
     If the last column (e.g., 'NOTE') is entirely empty, it is dropped.
-    If not, a warning is logged and the column is retained.
+    If not, the last column is always cast to string to avoid dtype warnings.
 
     Args:
         filepath: Path to the Excel file.
@@ -36,18 +36,17 @@ def read_excel_file(filepath: str) -> Dict[str, pl.DataFrame]:
         result = {}
         for sheet_name in sheet_names:
             df = pl.read_excel(filepath, sheet_name=sheet_name, engine="calamine")
-            # Check if the last column is entirely empty
             last_col = df.columns[-1]
             non_empty = df.filter(pl.col(last_col).is_not_null() & (pl.col(last_col) != "")).height
             if non_empty == 0:
-                # Drop the last column if it's all empty
                 df = df.select(df.columns[:-1])
             else:
-                logging.warning(
-                    f"Sheet '{sheet_name}' in '{filepath}' has non-empty values in last column '{last_col}'. Column will be kept."
+                # Always cast last column to string to avoid dtype warnings
+                df = df.with_columns(pl.col(last_col).cast(pl.Utf8))
+                logging.info(
+                    f"Sheet '{sheet_name}' in '{filepath}' has non-empty values in last column '{last_col}'. Column will be kept and cast to string."
                 )
             result[sheet_name] = df
-
         return result
     except Exception as e:
         # Fallback to Polars' multi-sheet reading if fastexcel fails
@@ -60,8 +59,9 @@ def read_excel_file(filepath: str) -> Dict[str, pl.DataFrame]:
                 if non_empty == 0:
                     df = df.select(df.columns[:-1])
                 else:
-                    logging.warning(
-                        f"Sheet '{sheet_name}' in '{filepath}' has non-empty values in last column '{last_col}'. Column will be kept."
+                    df = df.with_columns(pl.col(last_col).cast(pl.Utf8))
+                    logging.info(
+                        f"Sheet '{sheet_name}' in '{filepath}' has non-empty values in last column '{last_col}'. Column will be kept and cast to string."
                     )
                 sheets[sheet_name] = df
             return sheets
@@ -71,8 +71,9 @@ def read_excel_file(filepath: str) -> Dict[str, pl.DataFrame]:
             if non_empty == 0:
                 sheets = sheets.select(sheets.columns[:-1])
             else:
-                logging.warning(
-                    f"Single sheet in '{filepath}' has non-empty values in last column '{last_col}'. Column will be kept."
+                sheets = sheets.with_columns(pl.col(last_col).cast(pl.Utf8))
+                logging.info(
+                    f"Single sheet in '{filepath}' has non-empty values in last column '{last_col}'. Column will be kept and cast to string."
                 )
             return {"Sheet1": sheets}
         return sheets

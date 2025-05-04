@@ -1,6 +1,6 @@
 ### HyperMVP Market Analysis (Revised)
 
-#### Key Concepts:
+#### Key Concepts
 
 1. **Marginal Price (Grenzpreis):**
 
@@ -23,6 +23,7 @@
        - Some providers are more eager to be called a lot and may even be willing to pay the grid operator to be called before others that want to be paid by the grid. The reason why can be explained by Philipp but are too complex to be explained in written form here.
 
    - **Positive aFRR:**
+
 - Represents the injection of balancing energy into the system (the TSO increases generation or reduces consumption).
 
 3. **Payment Direction and Merit Order Principle:**
@@ -30,7 +31,7 @@
    - At the start of each 15-minute control window, the TSO stabilizes the grid by engaging providers in a sequence that honors the merit-order principle.
    - Providers with negative prices (Payment Direction PROVIDER_TO_GRID) are called first, followed by providers with zero and then positive prices (Payment Direction GRID_TO_PROVIDER), until the control demand is fully met.
 
-#### Workflow Overview:
+#### Workflow Overview
 
 **Provider Workflow (Revised):**
 
@@ -55,13 +56,13 @@
   The system loads and cleans the AFRR data in memory.
 
 - **15-Minute Interval Update Process:**  
-  Every 15-minute period requires a specific adjustment value – a delta between the planned energy and the actual measured energy. This delta, which is always negative for our purposes (we are only analysing negativ AFRR in this project), is used to keep the grid stable. 
+  Every 15-minute period requires a specific adjustment value – a delta between the planned energy and the actual measured energy. This delta, which is always negative for our purposes (we are only analysing negativ AFRR in this project), is used to keep the grid stable.
   When a value is imported that already exists the script updates the database by overwriting the existing delta for that interval. This ensures that each interval always holds the most current adjustment value while allowing past values to be corrected if necessary.
 
 - **Outcome:**  
   AFRR data is maintained accurately on a 15-minute interval basis, with one current adjustment value (delta) per interval.
 
-#### Algorithm for Marginal Price Calculation:
+#### Algorithm for Marginal Price Calculation
 
 1. **Data Preparation:**
 
@@ -90,12 +91,13 @@
      - Add offered power to the cumulative total until demand is met.
      - The price of the last activated offer sets the marginal price.
 
-#### Example Calculation:
+#### Example Calculation
 
 1. **Input Data:**
 
    - Negative balancing energy demand: 80.528 MW (50Hertz at 16:00 – 16:15).
    - Offers sorted by price:
+
      | Offer # | Price (EUR/MWh) | Offered MW | Cumulative MW | Still Needed? |
      | ------- | --------------- | ---------- | ------------- | ------------- |
      | 1       | -10.0           | 30         | 30            | 55.528        |
@@ -107,14 +109,14 @@
    - Marginal Price: “-3.87 EUR/MWh” at 80.528 MW.
    - Hypothetical Variation: At 138 MW demand using the same provider pool, the marginal price would have been 14.04 EUR/MWh.
 
-#### Insights:
+#### Insights
 
 - **Strategic Pricing:**
   - Marginal prices help providers adjust bidding strategies. For example, historical data showing frequent high prices in specific intervals can inform offer adjustments.
 - **Surface-Level Forecasting:**
   - By analyzing trends in marginal prices, providers may identify patterns that help shape future pricing strategies.
 
-#### Structure and Flow Enhancements:
+#### Structure and Flow Enhancements
 
 1. **Step-by-Step Process:**
 
@@ -127,6 +129,3 @@
 3. **Example Variation Context:**
 
    - The example highlights how the marginal price changes under higher demand using the same provider pool. This variation demonstrates the algorithm’s flexibility without introducing new complexities.
-
-
-

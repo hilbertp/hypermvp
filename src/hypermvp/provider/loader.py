@@ -36,9 +36,10 @@ def insert_dataframes(
     Uses DuckDB's in-memory registration for fast, zero-copy bulk insert.
     """
     for i, df in enumerate(dfs):
-        df = ensure_all_columns(df, RAW_TABLE_SCHEMA)  # <-- Add this line
+        df = ensure_all_columns(df, RAW_TABLE_SCHEMA)
         temp_view = f"_temp_df_{i}"
         conn.register(temp_view, df.to_pandas())
+        logging.info(f"Loading {len(df):,} rows into DuckDB table '{table_name}'...")  # <-- thousands separator
         conn.execute(f'INSERT INTO "{table_name}" SELECT * FROM "{temp_view}"')
         conn.unregister(temp_view)
 
